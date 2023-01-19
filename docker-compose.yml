@@ -4,10 +4,14 @@ services:
   php:
     restart: always
     build:
-        context: .
-        dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+    - ./:/var/www/html
+
     ports:
       - "1280:80"
+      - "5173:5173"
 
   db:
     image: postgres:15.1-alpine

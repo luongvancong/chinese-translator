@@ -13,6 +13,5 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', [\App\Http\Controllers\Frontend\Home\IndexController::class, 'index']);
+Route::post('/', [\App\Http\Controllers\Frontend\Home\IndexController::class, 'postTranslate']);
