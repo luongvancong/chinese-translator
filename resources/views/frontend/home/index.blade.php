@@ -64,8 +64,8 @@
                 <div
                     contenteditable
                     x-ref="chinese"
-                    @input="chinese = $event.target.textContent"
-                    class="w-full border-0 resize-none h-[400px] px-4 py-4 outline-0"></div>
+                    @input="chinese = $event.target.innerHTML"
+                    class="w-full border border-blue-300 rounded resize-none h-[400px] px-4 py-4 overflow-auto"></div>
             </div>
             <div>
                 <div class="w-full text-xl">Vietnamese</div>

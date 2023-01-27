@@ -6,18 +6,18 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Class Meaning
+ * Class SyntaxMeaning
  * @package App\Models
  *
  * @property string id
- * @property string word
+ * @property string pattern
  * @property int word_length
  * @property string meaning
  * @property float priority
  * @property string created_at
  * @property string updated_at
  */
-class Meaning extends Model
+class SyntaxMeaning extends Model
 {
-    protected $table = 'meaning';
+    protected $table = 'syntax_meaning';
 }
