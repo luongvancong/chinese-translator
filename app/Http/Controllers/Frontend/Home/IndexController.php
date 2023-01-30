@@ -46,6 +46,7 @@ class IndexController extends Controller
             $arrWord = array_unique($matches[0]);
             $meaning = Meaning::query()
                 ->whereIn('word', $arrWord)
+                ->orderBy('priority', 'DESC')
                 ->get();
 
             foreach ($meaning as $item) {

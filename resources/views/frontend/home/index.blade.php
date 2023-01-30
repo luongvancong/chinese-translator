@@ -70,6 +70,7 @@
             <div>
                 <div class="w-full text-xl">Vietnamese</div>
                 <div
+                    contenteditable
                     x-html="translatedContent"
                     class="border border-pink-300 rounded h-[400px] px-4 py-4 overflow-auto"></div>
             </div>
