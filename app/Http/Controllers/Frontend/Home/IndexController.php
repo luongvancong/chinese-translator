@@ -18,27 +18,20 @@ class IndexController extends Controller
         $chinese = $request->get('chinese');
         $translatedContent = "";
         if ($chinese) {
-            $chineseClean = strip_tags($chinese);
-
             $translatedContent = $chinese;
             $translatedContent = str_replace('、', ', ', $translatedContent);
             $translatedContent = str_replace('。', '. ', $translatedContent);
 
             $translatedContent = $this->processWithSyntax($translatedContent);
 
-
-//            dd($translatedContent);
-
-            for ($i = 15; $i >= 2; $i--) {
+            for ($i = 25; $i >= 2; $i--) {
                 $meaningRows = Meaning::query()
                     ->where('priority', $i)
-//                    ->where('id', '4ebaeea4-c1da-48d3-993f-285e2d5950a5')
                     ->orderBy('word_length', 'DESC')
                     ->get();
 
                 foreach ($meaningRows as $item) {
                     $translatedContent = str_replace($item->word, $item->meaning . ' ', $translatedContent);
-//                    dd($translatedContent);
                 }
             }
 
@@ -71,14 +64,11 @@ class IndexController extends Controller
     public function processWithSyntax($translatedContent) {
         $cleanContent = strip_tags($translatedContent);
         $syntaxMeaningRows = SyntaxMeaning::query()
-//            ->where('id', '8616f862-d0bb-45ca-89e0-0a2fd752e3b3')
             ->orderBy('priority', 'DESC')
             ->get();
 
         foreach ($syntaxMeaningRows as $item) {
             preg_match_all('/'.$item->pattern.'/u', $cleanContent, $matches);
-
-//            dd($matches);
 
             if (isset($matches[2])) {
                 foreach ($matches[2] as $i => $word) {
@@ -94,6 +84,7 @@ class IndexController extends Controller
                         ->first();
 
                     $word1 = Arr::has($matches, 3) ? Arr::get($matches[3], $i) : null;
+                    $word2 = Arr::has($matches, 4) ? Arr::get($matches[4], $i) : null;
 
                     if ($meaning) {
                         $meaningVn = str_replace('{any}', $meaning->meaning, $item->meaning);
@@ -109,6 +100,19 @@ class IndexController extends Controller
                                 $meaningVn = str_replace('{any1}', $word1, $meaningVn);
                             }
                         }
+
+                        if ($word2) {
+                            $meaning2 = Meaning::query()
+                                ->where('word', $word2)
+                                ->first();
+
+                            if ($meaning2) {
+                                $meaningVn = str_replace('{any2}', $meaning1->meaning, $meaningVn);
+                            }
+                            else {
+                                $meaningVn = str_replace('{any2}', $word2, $meaningVn);
+                            }
+                        }
                     }
                     else {
                         $meaningVn = str_replace('{any}', $word, $item->meaning);
@@ -120,5 +124,42 @@ class IndexController extends Controller
         }
 
         return $translatedContent;
+    }
+
+    public function addWords(Request $request) {
+        $chinese = $request->get('chinese');
+        $meaning = $request->get('meaning');
+
+        if (!$chinese || !$meaning) {
+            return response()->json([
+                'message' => 'Bad request'
+            ], 400);
+        }
+
+        $chinese = trim($chinese);
+        $meaning = trim($meaning);
+
+        $exist = Meaning::query()
+            ->where('word', $chinese)
+            ->where('priority', mb_strlen($chinese))
+            ->first();
+
+        if ($exist) {
+            return response()->json([
+                'message' => sprintf("%s with priority %s has been existed", $chinese, mb_strlen($chinese))
+            ], 400);
+        }
+
+        $m = new Meaning();
+        $m->word = $chinese;
+        $m->meaning = $meaning;
+        $m->priority = mb_strlen($chinese);
+        $m->word_length = mb_strlen($chinese);
+        $m->save();
+
+        return response()->json([
+            'message' => sprintf("%s has been successfully added", $chinese),
+            'data' => $m
+        ]);
     }
 }

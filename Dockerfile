@@ -7,3 +7,5 @@ COPY . /var/www/html
 COPY ./vhost.conf /etc/apache2/sites-available/000-default.conf
 
 RUN chown -R www-data:www-data /var/www/html
+
+RUN a2enmod rewrite && service apache2 restart

@@ -23,6 +23,8 @@
                 return {
                     chinese: '',
                     translatedContent: '',
+                    aChinese: '',
+                    aMeaning: '',
                     init() {
 
                     },
@@ -41,6 +43,26 @@
                         .catch((error) => {
                             console.log(error)
                         })
+                    },
+
+                    handleSubmitAddWord(e) {
+                        e.preventDefault();
+                        axios({
+                            url: '/add-words',
+                            method: 'POST',
+                            data: {
+                                chinese: this.aChinese,
+                                meaning: this.aMeaning
+                            }
+                        })
+                            .then((response) => {
+                                alert(response.data.message)
+                                this.aChinese = ''
+                                this.aMeaning = ''
+                            })
+                            .catch((error) => {
+                                alert(error.response.data.message || error.message || "Error")
+                            })
                     }
                 }
             })
@@ -81,6 +103,34 @@
             @click="handleSubmitTranslate"
             type="submit"
             class="rounded bg-blue-500 text-white uppercase text-xl py-2 px-5 disabled:bg-gray-500 disabled:text-black">Translate</button>
+
+        <div class="border border-violet-300 rounded px-4 py-4 mt-4 mb-4">
+            <h1 class="text-3xl flex justify-center uppercase mb-2">Update vietphrase</h1>
+            <div class="grid grid-cols-2 my-4 gap-5">
+                <div>
+                    <label for="update-chinese">Chinese</label>
+                    <input
+                        id="update-chinese"
+                        class="border rounded px-2 py-2 w-full"
+                        placeholder="Chinese"
+                        x-model="aChinese"
+                    />
+                </div>
+                <div>
+                    <label for="update-vietnamese">Vietnamese</label>
+                    <input
+                        id="update-vietnamese"
+                        class="border rounded px-2 py-2 w-full"
+                        placeholder="Vietnamese"
+                        x-model="aMeaning"
+                    />
+                </div>
+            </div>
+            <button
+                @click="handleSubmitAddWord"
+                type="submit"
+                class="rounded bg-blue-500 text-white uppercase text-xl py-2 px-5 disabled:bg-gray-500 disabled:text-black">Add VietPhrase</button>
+        </div>
     </div>
 </body>
 </html>

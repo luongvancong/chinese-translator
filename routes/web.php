@@ -15,3 +15,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [\App\Http\Controllers\Frontend\Home\IndexController::class, 'index']);
 Route::post('/', [\App\Http\Controllers\Frontend\Home\IndexController::class, 'postTranslate']);
+Route::post('add-words', [\App\Http\Controllers\Frontend\Home\IndexController::class, 'addWords']);
+Route::get('/test', function() {
+    return 'Test';
+});
