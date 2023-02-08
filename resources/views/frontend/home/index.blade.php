@@ -25,9 +25,12 @@
                     translatedContent: '',
                     aChinese: '',
                     aMeaning: '',
+                    aType: null,
+
                     init() {
 
                     },
+
                     handleSubmitTranslate(e) {
                         e.preventDefault();
                         axios({
@@ -52,13 +55,15 @@
                             method: 'POST',
                             data: {
                                 chinese: this.aChinese,
-                                meaning: this.aMeaning
+                                meaning: this.aMeaning,
+                                type: this.aType || null
                             }
                         })
                             .then((response) => {
                                 alert(response.data.message)
                                 this.aChinese = ''
                                 this.aMeaning = ''
+                                this.aType = null
                             })
                             .catch((error) => {
                                 alert(error.response.data.message || error.message || "Error")
@@ -106,7 +111,7 @@
 
         <div class="border border-violet-300 rounded px-4 py-4 mt-4 mb-4">
             <h1 class="text-3xl flex justify-center uppercase mb-2">Update vietphrase</h1>
-            <div class="grid grid-cols-2 my-4 gap-5">
+            <div class="grid grid-cols-3 my-4 gap-5">
                 <div>
                     <label for="update-chinese">Chinese</label>
                     <input
@@ -124,6 +129,17 @@
                         placeholder="Vietnamese"
                         x-model="aMeaning"
                     />
+                </div>
+                <div>
+                    <label for="update-vietnamese">Type</label>
+                    <select
+                        id="update-type"
+                        class="border rounded px-2 py-2 w-full"
+                        x-model="aType"
+                    >
+                        <option value=""></option>
+                        <option value="NAME">NAME</option>
+                    </select>
                 </div>
             </div>
             <button

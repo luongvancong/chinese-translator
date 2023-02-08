@@ -22,6 +22,7 @@ class IndexController extends Controller
             $translatedContent = str_replace('、', ', ', $translatedContent);
             $translatedContent = str_replace('。', '. ', $translatedContent);
 
+            $translatedContent = $this->processName($translatedContent);
             $translatedContent = $this->processWithSyntax($translatedContent);
 
             for ($i = 25; $i >= 2; $i--) {
@@ -59,6 +60,22 @@ class IndexController extends Controller
         return response()->json([
             'translatedContent' => $translatedContent
         ]);
+    }
+
+    public function processName($translatedContent) {
+        for ($i = 25; $i >= 2; $i--) {
+            $meaningRows = Meaning::query()
+                ->where('type', 'NAME')
+                ->where('priority', $i)
+                ->orderBy('word_length', 'DESC')
+                ->get();
+
+            foreach ($meaningRows as $item) {
+                $translatedContent = str_replace($item->word, $item->meaning . ' ', $translatedContent);
+            }
+        }
+
+        return $translatedContent;
     }
 
     public function processWithSyntax($translatedContent) {
@@ -129,6 +146,7 @@ class IndexController extends Controller
     public function addWords(Request $request) {
         $chinese = $request->get('chinese');
         $meaning = $request->get('meaning');
+        $type = $request->get('type');
 
         if (!$chinese || !$meaning) {
             return response()->json([
@@ -142,6 +160,7 @@ class IndexController extends Controller
         $exist = Meaning::query()
             ->where('word', $chinese)
             ->where('priority', mb_strlen($chinese))
+            ->where('type', $type)
             ->first();
 
         if ($exist) {
@@ -153,6 +172,7 @@ class IndexController extends Controller
         $m = new Meaning();
         $m->word = $chinese;
         $m->meaning = $meaning;
+        $m->type = $type;
         $m->priority = mb_strlen($chinese);
         $m->word_length = mb_strlen($chinese);
         $m->save();
