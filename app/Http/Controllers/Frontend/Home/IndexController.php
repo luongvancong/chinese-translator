@@ -19,21 +19,18 @@ class IndexController extends Controller
         $translatedContent = "";
         if ($chinese) {
             $translatedContent = $chinese;
-            $translatedContent = str_replace('、', ', ', $translatedContent);
-            $translatedContent = str_replace('。', '. ', $translatedContent);
 
             $translatedContent = $this->processName($translatedContent);
             $translatedContent = $this->processWithSyntax($translatedContent);
 
-            for ($i = 25; $i >= 2; $i--) {
-                $meaningRows = Meaning::query()
-                    ->where('priority', $i)
-                    ->orderBy('word_length', 'DESC')
-                    ->get();
+            $meaningRows = Meaning::query()
+                ->where('priority', '>', 1)
+                ->orderBy('priority', 'DESC')
+                ->orderBy('word_length', 'DESC')
+                ->get();
 
-                foreach ($meaningRows as $item) {
-                    $translatedContent = str_replace($item->word, $item->meaning . ' ', $translatedContent);
-                }
+            foreach ($meaningRows as $item) {
+                $translatedContent = str_replace($item->word, $item->meaning . ' ', $translatedContent);
             }
 
             preg_match_all('/\p{Han}/u', $translatedContent, $matches);
@@ -54,6 +51,10 @@ class IndexController extends Controller
                 $translatedContent = str_replace("\r\n", '<br/>', $translatedContent);
                 $translatedContent = str_replace("\n", '<br/>', $translatedContent);
             }
+
+            $translatedContent = str_replace('；', ', ', $translatedContent);
+            $translatedContent = str_replace('、', ', ', $translatedContent);
+            $translatedContent = str_replace('。', '. ', $translatedContent);
         }
 
 

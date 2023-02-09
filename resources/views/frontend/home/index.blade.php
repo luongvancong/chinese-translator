@@ -11,70 +11,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
 
-    <script src="https://cdn.jsdelivr.net/npm/axios@1.1.2/dist/axios.min.js"></script>
-    <script src="//unpkg.com/alpinejs" defer></script>
-
     @vite('resources/css/frontend/app.css')
     @vite('resources/js/frontend/app.js')
-
-    <script>
-        document.addEventListener('alpine:init', () => {
-            Alpine.data('app', () => {
-                return {
-                    chinese: '',
-                    translatedContent: '',
-                    aChinese: '',
-                    aMeaning: '',
-                    aType: null,
-
-                    init() {
-
-                    },
-
-                    handleSubmitTranslate(e) {
-                        e.preventDefault();
-                        axios({
-                            url: '/',
-                            method: 'POST',
-                            data: {
-                                chinese: this.chinese
-                            }
-                        })
-                        .then(response => {
-                            this.translatedContent = response.data.translatedContent
-                        })
-                        .catch((error) => {
-                            console.log(error)
-                        })
-                    },
-
-                    handleSubmitAddWord(e) {
-                        e.preventDefault();
-                        axios({
-                            url: '/add-words',
-                            method: 'POST',
-                            data: {
-                                chinese: this.aChinese,
-                                meaning: this.aMeaning,
-                                type: this.aType || null
-                            }
-                        })
-                            .then((response) => {
-                                alert(response.data.message)
-                                this.aChinese = ''
-                                this.aMeaning = ''
-                                this.aType = null
-                            })
-                            .catch((error) => {
-                                alert(error.response.data.message || error.message || "Error")
-                            })
-                    }
-                }
-            })
-        })
-    </script>
-
-
 </head>
 
 
