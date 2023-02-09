@@ -64,16 +64,14 @@ class IndexController extends Controller
     }
 
     public function processName($translatedContent) {
-        for ($i = 25; $i >= 2; $i--) {
-            $meaningRows = Meaning::query()
-                ->where('type', 'NAME')
-                ->where('priority', $i)
-                ->orderBy('word_length', 'DESC')
-                ->get();
+        $meaningRows = Meaning::query()
+            ->where('type', 'NAME')
+            ->orderBy('priority', 'DESC')
+            ->orderBy('word_length', 'DESC')
+            ->get();
 
-            foreach ($meaningRows as $item) {
-                $translatedContent = str_replace($item->word, $item->meaning . ' ', $translatedContent);
-            }
+        foreach ($meaningRows as $item) {
+            $translatedContent = str_replace($item->word, $item->meaning . ' ', $translatedContent);
         }
 
         return $translatedContent;
