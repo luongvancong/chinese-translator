@@ -17,50 +17,70 @@ class IndexController extends Controller
     public function postTranslate(Request $request) {
         $chinese = $request->get('chinese');
         $translatedContent = "";
+        $lineByLineContent = "";
+
+        $result = collect();
         if ($chinese) {
             $translatedContent = $chinese;
+            $translatedContent = strip_tags($translatedContent);
+            $translatedContent = str_replace("\r\n", '', $translatedContent);
+            $translatedContent = str_replace("\n", '', $translatedContent);
 
-            $translatedContent = $this->processName($translatedContent);
-            $translatedContent = $this->processWithSyntax($translatedContent);
+            $lineByLineContent = $this->breakTextToArray($translatedContent);
 
-            $meaningRows = Meaning::query()
-                ->where('priority', '>', 1)
-                ->orderBy('priority', 'DESC')
-                ->orderBy('word_length', 'DESC')
-                ->get();
-
-            foreach ($meaningRows as $item) {
-                $translatedContent = str_replace($item->word, $item->meaning . ' ', $translatedContent);
+            foreach ($lineByLineContent as $line) {
+                $content = $this->translate($line);
+                $result->push([
+                    'source' => $line,
+                    'predict' => $content
+                ]);
             }
-
-            preg_match_all('/\p{Han}/u', $translatedContent, $matches);
-            $arrWord = array_unique($matches[0]);
-            $meaning = Meaning::query()
-                ->whereIn('word', $arrWord)
-                ->orderBy('priority', 'DESC')
-                ->get();
-
-            foreach ($meaning as $item) {
-                $translatedContent = str_replace($item->word, $item->meaning . ' ', $translatedContent);
-                $translatedContent = preg_replace('!\s+!', ' ', $translatedContent);
-                $translatedContent = str_replace('、', ',', $translatedContent);
-                $translatedContent = str_replace('，', ',', $translatedContent);
-                $translatedContent = str_replace(' ,', ', ', $translatedContent);
-                $translatedContent = str_replace('。', '.', $translatedContent);
-                $translatedContent = str_replace(' .', '. ', $translatedContent);
-                $translatedContent = str_replace("\r\n", '<br/>', $translatedContent);
-                $translatedContent = str_replace("\n", '<br/>', $translatedContent);
-            }
-
-            $translatedContent = str_replace('；', ', ', $translatedContent);
-            $translatedContent = str_replace('、', ', ', $translatedContent);
-            $translatedContent = str_replace('。', '. ', $translatedContent);
         }
 
+        return $result;
+    }
 
-        return response()->json([
-            'translatedContent' => $translatedContent
-        ]);
+    public function translate($text) {
+        $translatedContent = $text;
+
+        $translatedContent = strip_tags($translatedContent);
+        $translatedContent = $this->processName($translatedContent);
+        $translatedContent = $this->processWithSyntax($translatedContent);
+
+        $meaningRows = Meaning::query()
+            ->where('priority', '>', 1)
+            ->orderBy('priority', 'DESC')
+            ->orderBy('word_length', 'DESC')
+            ->get();
+
+        foreach ($meaningRows as $item) {
+            $translatedContent = str_replace($item->word, $item->meaning . ' ', $translatedContent);
+        }
+
+        preg_match_all('/\p{Han}/u', $translatedContent, $matches);
+        $arrWord = array_unique($matches[0]);
+        $meaning = Meaning::query()
+            ->whereIn('word', $arrWord)
+            ->orderBy('priority', 'DESC')
+            ->get();
+
+        foreach ($meaning as $item) {
+            $translatedContent = str_replace($item->word, $item->meaning . ' ', $translatedContent);
+            $translatedContent = preg_replace('!\s+!', ' ', $translatedContent);
+            $translatedContent = str_replace('、', ',', $translatedContent);
+            $translatedContent = str_replace('，', ',', $translatedContent);
+            $translatedContent = str_replace(' ,', ', ', $translatedContent);
+            $translatedContent = str_replace('。', '.', $translatedContent);
+            $translatedContent = str_replace(' .', '. ', $translatedContent);
+            $translatedContent = str_replace("\r\n", '<br/>', $translatedContent);
+            $translatedContent = str_replace("\n", '<br/>', $translatedContent);
+        }
+
+        $translatedContent = str_replace('；', ', ', $translatedContent);
+        $translatedContent = str_replace('、', ', ', $translatedContent);
+        $translatedContent = str_replace('。', '. ', $translatedContent);
+
+        return $translatedContent;
     }
 
     public function processName($translatedContent) {
@@ -156,6 +176,23 @@ class IndexController extends Controller
         $chinese = trim($chinese);
         $meaning = trim($meaning);
 
+        if ($type !== "NAME") {
+            $meaning = mb_strtolower($meaning);
+        }
+
+        if (mb_strlen($chinese) < 2) {
+            return response()->json([
+                'message' => 'Word length minimum is 2'
+            ]);
+        }
+
+        $chinese = trim($chinese);
+        $chinese = str_replace("\n", "", $chinese);
+        $chinese = str_replace("\r\n", "", $chinese);
+        $meaning = trim($meaning);
+        $meaning = str_replace("\n", "", $meaning);
+        $meaning = str_replace("\r\n", "", $meaning);
+
         $exist = Meaning::query()
             ->where('word', $chinese)
             ->where('priority', mb_strlen($chinese))
@@ -180,5 +217,22 @@ class IndexController extends Controller
             'message' => sprintf("%s has been successfully added", $chinese),
             'data' => $m
         ]);
+    }
+
+    public function breakParagraph($text) {
+        $arr = explode("。", $text);
+        $result = "";
+        foreach ($arr as $line) {
+            $result .= '<p class="mb-2">' . $line . '</p>';
+        }
+        return $result;
+    }
+
+    public function breakTextToArray($text) {
+        $arr = explode("。", $text);
+        $arr = array_filter($arr, function($value) {
+            return !!$value;
+        });
+        return $arr;
     }
 }
