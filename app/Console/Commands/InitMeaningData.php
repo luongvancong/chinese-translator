@@ -4,6 +4,8 @@ namespace App\Console\Commands;
 
 use App\Models\Meaning;
 use Illuminate\Console\Command;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class InitMeaningData extends Command
@@ -37,11 +39,13 @@ class InitMeaningData extends Command
                 $lineData = str_replace("\n", '', $line);
                 list($word, $meaning) = explode("=", $lineData);
                 if ($word && $meaning) {
-                    $meaningObj = new Meaning();
-                    $meaningObj->word = $word;
-                    $meaningObj->meaning = $meaning;
-                    $meaningObj->priority = 1;
-                    $meaningObj->save();
+                    DB::table('phienam')
+                        ->insert([
+                            'word' => $word,
+                            'sino' => $meaning,
+                            'created_at' => Carbon::now()->toISOString(),
+                            'updated_at' => Carbon::now()->toISOString()
+                        ]);
                     Log::info("Insert {$lineData}");
                 }
             }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Frontend\Home;
 use App\Http\Controllers\Controller;
 use App\Models\Meaning;
 use App\Models\SyntaxMeaning;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 
@@ -16,8 +17,6 @@ class IndexController extends Controller
 
     public function postTranslate(Request $request) {
         $chinese = $request->get('chinese');
-        $translatedContent = "";
-        $lineByLineContent = "";
 
         $result = collect();
         if ($chinese) {
@@ -31,6 +30,7 @@ class IndexController extends Controller
             foreach ($lineByLineContent as $line) {
                 $content = $this->translate($line);
                 $result->push([
+                    'sino' => $this->getSinoVietnamese($line),
                     'source' => $line,
                     'predict' => $content
                 ]);
@@ -44,11 +44,13 @@ class IndexController extends Controller
         $translatedContent = $text;
 
         $translatedContent = strip_tags($translatedContent);
+        $translatedContent = $this->processPhrase($translatedContent);
         $translatedContent = $this->processName($translatedContent);
         $translatedContent = $this->processWithSyntax($translatedContent);
 
         $meaningRows = Meaning::query()
             ->where('priority', '>', 1)
+            ->where('priority', '<=', 100)
             ->orderBy('priority', 'DESC')
             ->orderBy('word_length', 'DESC')
             ->get();
@@ -57,6 +59,45 @@ class IndexController extends Controller
             $translatedContent = str_replace($item->word, $item->meaning . ' ', $translatedContent);
         }
 
+        $translatedContent = $this->processWordByWord($translatedContent);
+        $translatedContent = $this->clearDirtyCharacters($translatedContent);
+
+        return $translatedContent;
+    }
+
+    public function clearDirtyCharacters($translatedContent): string {
+        $translatedContent = str_replace('、', ',', $translatedContent);
+        $translatedContent = str_replace('，', ',', $translatedContent);
+        $translatedContent = str_replace(' ,', ', ', $translatedContent);
+        $translatedContent = str_replace('。', '.', $translatedContent);
+        $translatedContent = str_replace(' .', '. ', $translatedContent);
+        $translatedContent = str_replace('；', ', ', $translatedContent);
+        $translatedContent = str_replace('、', ', ', $translatedContent);
+        $translatedContent = str_replace('。', '. ', $translatedContent);
+        return trim($translatedContent);
+    }
+
+    public function getSinoVietnamese($translatedContent): string
+    {
+        preg_match_all('/\p{Han}/u', $translatedContent, $matches);
+        $arrWord = array_unique($matches[0]);
+        $meaning = Meaning::query()
+            ->whereIn('word', $arrWord)
+            ->orderBy('priority', 'DESC')
+            ->get();
+
+        foreach ($meaning as $item) {
+            $translatedContent = str_replace($item->word, $item->sino . ' ', $translatedContent);
+            $translatedContent = preg_replace('!\s+!', ' ', $translatedContent);
+        }
+
+        $translatedContent = str_replace(' ，', ', ', $translatedContent);
+
+        return trim($translatedContent);
+    }
+
+    public function processWordByWord($translatedContent): string
+    {
         preg_match_all('/\p{Han}/u', $translatedContent, $matches);
         $arrWord = array_unique($matches[0]);
         $meaning = Meaning::query()
@@ -67,20 +108,23 @@ class IndexController extends Controller
         foreach ($meaning as $item) {
             $translatedContent = str_replace($item->word, $item->meaning . ' ', $translatedContent);
             $translatedContent = preg_replace('!\s+!', ' ', $translatedContent);
-            $translatedContent = str_replace('、', ',', $translatedContent);
-            $translatedContent = str_replace('，', ',', $translatedContent);
-            $translatedContent = str_replace(' ,', ', ', $translatedContent);
-            $translatedContent = str_replace('。', '.', $translatedContent);
-            $translatedContent = str_replace(' .', '. ', $translatedContent);
-            $translatedContent = str_replace("\r\n", '<br/>', $translatedContent);
-            $translatedContent = str_replace("\n", '<br/>', $translatedContent);
         }
 
-        $translatedContent = str_replace('；', ', ', $translatedContent);
-        $translatedContent = str_replace('、', ', ', $translatedContent);
-        $translatedContent = str_replace('。', '. ', $translatedContent);
+        return trim($translatedContent);
+    }
 
-        return $translatedContent;
+    public function processPhrase($translatedContent) {
+        $meaningRows = Meaning::query()
+            ->where('type', 'PHRASE')
+            ->orderBy('priority', 'DESC')
+            ->orderBy('word_length', 'DESC')
+            ->get();
+
+        foreach ($meaningRows as $item) {
+            $translatedContent = str_replace($item->word, $item->meaning . ' ', $translatedContent);
+        }
+
+        return trim($translatedContent);
     }
 
     public function processName($translatedContent) {
@@ -94,7 +138,7 @@ class IndexController extends Controller
             $translatedContent = str_replace($item->word, $item->meaning . ' ', $translatedContent);
         }
 
-        return $translatedContent;
+        return trim($translatedContent);
     }
 
     public function processWithSyntax($translatedContent) {
@@ -159,7 +203,7 @@ class IndexController extends Controller
             }
         }
 
-        return $translatedContent;
+        return trim($translatedContent);
     }
 
     public function addWords(Request $request) {
@@ -176,7 +220,7 @@ class IndexController extends Controller
         $chinese = trim($chinese);
         $meaning = trim($meaning);
 
-        if ($type !== "NAME") {
+        if (!in_array($type, [Meaning::TYPE['NAME'], Meaning::TYPE['PHRASE']])) {
             $meaning = mb_strtolower($meaning);
         }
 
@@ -197,19 +241,19 @@ class IndexController extends Controller
             ->where('word', $chinese)
             ->where('priority', mb_strlen($chinese))
             ->where('type', $type)
+            ->orderBy('priority', 'DESC')
             ->first();
 
+        $m = new Meaning();
+        $m->priority = mb_strlen($chinese);
+
         if ($exist) {
-            return response()->json([
-                'message' => sprintf("%s with priority %s has been existed", $chinese, mb_strlen($chinese))
-            ], 400);
+            $m->priority = $exist->priority + 1;
         }
 
-        $m = new Meaning();
         $m->word = $chinese;
         $m->meaning = $meaning;
         $m->type = $type;
-        $m->priority = mb_strlen($chinese);
         $m->word_length = mb_strlen($chinese);
         $m->save();
 
@@ -219,20 +263,10 @@ class IndexController extends Controller
         ]);
     }
 
-    public function breakParagraph($text) {
+    public function breakTextToArray($text): array {
         $arr = explode("。", $text);
-        $result = "";
-        foreach ($arr as $line) {
-            $result .= '<p class="mb-2">' . $line . '</p>';
-        }
-        return $result;
-    }
-
-    public function breakTextToArray($text) {
-        $arr = explode("。", $text);
-        $arr = array_filter($arr, function($value) {
+        return array_filter($arr, function($value) {
             return !!$value;
         });
-        return $arr;
     }
 }

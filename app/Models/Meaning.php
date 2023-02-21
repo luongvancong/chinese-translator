@@ -21,4 +21,11 @@ use Illuminate\Database\Eloquent\Model;
 class Meaning extends Model
 {
     protected $table = 'meaning';
+    protected $keyType = 'string';
+    public $incrementing = false;
+
+    const TYPE = [
+        'NAME' => 'NAME',
+        'PHRASE' => 'PHRASE'
+    ];
 }

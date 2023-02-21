@@ -2,6 +2,7 @@ import React, {useState} from 'react'
 import Toastify from 'toastify-js'
 import "toastify-js/src/toastify.css"
 import axios from 'axios';
+import {Modal} from "antd";
 
 export const App = () => {
     const [chinese, setChinese] = useState("")
@@ -11,7 +12,12 @@ export const App = () => {
         meaning: "",
         type: ""
     })
-    const [currentTranslateLineValue, setCurrentTranslateLineValue] = useState("")
+
+    const [isShowModalTranslatedContent, setIsShowModalTranslatedContent] = useState(false)
+
+    const handleChangeInputSource = (content) => {
+        setChinese(content)
+    }
 
     const saveAddPhrase = (chinese, meaning, type) => {
         return axios({
@@ -54,12 +60,18 @@ export const App = () => {
 
     const handleAddPhrase = (e) => {
         e.preventDefault();
-        saveAddPhrase(formAddPhrase)
+        saveAddPhrase(formAddPhrase.chinese, formAddPhrase.meaning, formAddPhrase.type)
             .then(() => {
                 Toastify({
                     text: "Add vietpharse successfully",
                     backgroundColor: '#28a745'
                 }).showToast();
+
+                setFormAddPhrase({
+                    chinese: "",
+                    meaning: "",
+                    type: ""
+                })
             })
             .catch((error) => {
                 Toastify({
@@ -69,9 +81,14 @@ export const App = () => {
             })
     }
 
+    /**
+     * Update nguyên một câu văn
+     * @param e
+     * @param row
+     */
     const handleUpdatePhrase = (e, row) => {
         if (e.code === "Enter") {
-            saveAddPhrase(row.source, e.target.value)
+            saveAddPhrase(row.source, e.target.value, 'PHRASE')
                 .then(() => {
                     Toastify({
                         text: "Update successfully",
@@ -95,6 +112,10 @@ export const App = () => {
         }
     }
 
+    const handleViewTranslatedContent = () => {
+        setIsShowModalTranslatedContent(true)
+    }
+
     return (
         <div className="mx-auto px-4 py-4">
 
@@ -103,18 +124,18 @@ export const App = () => {
                     <h1 className="text-3xl flex justify-center uppercase mb-2">Chinese to Vietnamese translator</h1>
                     <div className="grid grid-cols-2 gap-5 p-4">
                         <div className={'border border-violet-300 rounded px-4 py-4'}>
-                            <div className="w-full text-xl">Raw Chinese</div>
+                            <div className="w-full text-xl">Đoạn văn chữ Hán</div>
                             <textarea
                                 value={chinese}
-                                onChange={e => setChinese(e.target.value.replaceAll("\n", ""))}
+                                onChange={e => handleChangeInputSource(e.target.value.replaceAll("\n", ""))}
                                 className="w-full border border-blue-300 rounded resize-none h-[150px] px-4 py-4 overflow-auto mb-4" />
                             <button
                                 onClick={handleTranslate}
                                 className="rounded bg-blue-500 text-white uppercase text-xl py-2 px-5 disabled:bg-gray-500 disabled:text-black mr-4">
-                                Translate</button>
+                                Dịch</button>
                         </div>
                         <div className="border border-violet-300 rounded px-4 py-4">
-                            <h1 className="text-3xl flex justify-center uppercase mb-2">Update vietphrase</h1>
+                            <h1 className="text-3xl flex justify-center uppercase mb-2">Thêm từ điển</h1>
                             <div className="grid grid-cols-3 my-4 gap-5">
                                 <div>
                                     <label htmlFor="update-chinese">Chinese</label>
@@ -137,7 +158,7 @@ export const App = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label htmlFor="update-vietnamese">Type</label>
+                                    <label htmlFor="update-vietnamese">Loại</label>
                                     <select
                                         id="update-type"
                                         className="border rounded px-2 py-2 w-full"
@@ -145,34 +166,55 @@ export const App = () => {
                                         onChange={e => handleChangedFormAddPhrase('type', e.target.value)}
                                     >
                                         <option value="">--</option>
-                                        <option value="NAME">NAME</option>
+                                        <option value="NAME">Tên nhân vật</option>
                                     </select>
                                 </div>
                             </div>
                             <button
                                 onClick={handleAddPhrase}
                                 className="rounded bg-blue-500 text-white uppercase text-xl py-2 px-5 disabled:bg-gray-500 disabled:text-black"
-                            >Add VietPhrase
+                            >Thêm từ điển
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 my-4 bg-red mt-[400px]">
-                <div>
-                    {translateArr.map((x, i) => (
-                        <div className={'w-full'} key={i}>
-                            <div className={'text-xl'}>{x.source}</div>
-                            <textarea
-                                value={x.predict}
-                                onChange={e => handleChangeTranslateLine(i, e.target.value)}
-                                onKeyPress={e => handleUpdatePhrase(e, x)}
-                                className={'border rounded border-[1px] border-grey-300 p-2 w-full bg-yellow-200'} />
-                        </div>
-                    ))}
+            <div className="my-4 bg-red mt-[400px]">
+                <div className="mb-4">
+                    <button
+                        onClick={handleViewTranslatedContent}
+                        className={'bg-red-300 text-white rounded p-[5px_15px]'}>Xem bản dịch</button>
+                </div>
+
+                <div className={'grid grid-cols-1 gap-5'}>
+                    <div className={'col-span-2'}>
+                        {translateArr.map((x, i) => (
+                            <div className={'w-full mb-4'} key={i}>
+                                <div className={'text-xl'}>{x.source}</div>
+                                <div className={'text-md text-blue-600'}>{x.sino}</div>
+                                <textarea
+                                    value={x.predict}
+                                    onChange={e => handleChangeTranslateLine(i, e.target.value)}
+                                    onKeyPress={e => handleUpdatePhrase(e, x)}
+                                    className={'border rounded border-[1px] border-grey-300 p-2 w-full bg-yellow-200'} />
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
+
+            <Modal
+                width={800}
+                title={'Bản dịch'}
+                open={isShowModalTranslatedContent}
+                footer={null}
+                onCancel={() => setIsShowModalTranslatedContent(false)}
+            >
+                {translateArr.map((x, i) => (
+                    <p key={i} className={'mb-2'}>{x.predict}.</p>
+                ))}
+            </Modal>
         </div>
     )
 }
