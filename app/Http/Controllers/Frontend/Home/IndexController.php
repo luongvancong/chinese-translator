@@ -98,6 +98,7 @@ class IndexController extends Controller
 
     public function processWordByWord($translatedContent): string
     {
+        $translatedContent = mb_strtolower($translatedContent);
         preg_match_all('/\p{Han}/u', $translatedContent, $matches);
         $arrWord = array_unique($matches[0]);
         $meaning = Meaning::query()
@@ -239,22 +240,22 @@ class IndexController extends Controller
 
         $exist = Meaning::query()
             ->where('word', $chinese)
-            ->where('priority', mb_strlen($chinese))
             ->where('type', $type)
             ->orderBy('priority', 'DESC')
             ->first();
 
         $m = new Meaning();
         $m->priority = mb_strlen($chinese);
+        $m->word = $chinese;
+        $m->meaning = $meaning;
+        $m->type = $type;
+        $m->word_length = mb_strlen($chinese);
+        $m->sino = $this->processWordByWord($meaning);
 
         if ($exist) {
             $m->priority = $exist->priority + 1;
         }
 
-        $m->word = $chinese;
-        $m->meaning = $meaning;
-        $m->type = $type;
-        $m->word_length = mb_strlen($chinese);
         $m->save();
 
         return response()->json([

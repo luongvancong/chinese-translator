@@ -129,10 +129,26 @@ export const App = () => {
                                 value={chinese}
                                 onChange={e => handleChangeInputSource(e.target.value.replaceAll("\n", ""))}
                                 className="w-full border border-blue-300 rounded resize-none h-[150px] px-4 py-4 overflow-auto mb-4" />
-                            <button
-                                onClick={handleTranslate}
-                                className="rounded bg-blue-500 text-white uppercase text-xl py-2 px-5 disabled:bg-gray-500 disabled:text-black mr-4">
-                                Dịch</button>
+
+                            <div className="flex justify-between">
+                                <div>
+                                    <button
+                                        onClick={handleTranslate}
+                                        className="rounded bg-blue-500 text-white uppercase text-xl py-2 px-5 disabled:bg-gray-500 disabled:text-black mr-4">
+                                        Dịch</button>
+
+                                    {translateArr.length > 0 && (
+                                        <button
+                                            onClick={handleViewTranslatedContent}
+                                            className={'bg-red-500 text-white text-xl rounded py-2 px-5'}>Xem bản dịch</button>
+                                    )}
+                                </div>
+                                <div>
+                                    <span className={'text-sm'}>{chinese.length} chữ | </span>
+                                    <span className={'text-sm'}>{translateArr.length} câu</span>
+                                </div>
+                            </div>
+
                         </div>
                         <div className="border border-violet-300 rounded px-4 py-4">
                             <h1 className="text-3xl flex justify-center uppercase mb-2">Thêm từ điển</h1>
@@ -181,17 +197,11 @@ export const App = () => {
             </div>
 
             <div className="my-4 bg-red mt-[400px]">
-                <div className="mb-4">
-                    <button
-                        onClick={handleViewTranslatedContent}
-                        className={'bg-red-300 text-white rounded p-[5px_15px]'}>Xem bản dịch</button>
-                </div>
-
                 <div className={'grid grid-cols-1 gap-5'}>
                     <div className={'col-span-2'}>
                         {translateArr.map((x, i) => (
                             <div className={'w-full mb-4'} key={i}>
-                                <div className={'text-xl'}>{x.source}</div>
+                                <div className={'text-3xl'}><span className={'rounded bg-green-200 p-2 text-xs'}>{i+1}</span> {x.source}</div>
                                 <div className={'text-md text-blue-600'}>{x.sino}</div>
                                 <textarea
                                     value={x.predict}

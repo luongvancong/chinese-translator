@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $type;
  * @property int word_length
  * @property string meaning
+ * @property string sino
  * @property float priority
  * @property string created_at
  * @property string updated_at
