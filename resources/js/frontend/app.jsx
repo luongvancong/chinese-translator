@@ -14,6 +14,10 @@ export const App = () => {
     })
 
     const [isShowModalTranslatedContent, setIsShowModalTranslatedContent] = useState(false)
+    const [sinoWordSelected, setSinoWordSelected] = useState({
+        rowIndex: -1,
+        wordIndex: -1
+    })
 
     const handleChangeInputSource = (content) => {
         setChinese(content)
@@ -116,6 +120,88 @@ export const App = () => {
         setIsShowModalTranslatedContent(true)
     }
 
+    const handleClickSinoWord = (rowIndex, wordIndex) => {
+        if (sinoWordSelected.rowIndex === rowIndex && sinoWordSelected.wordIndex === wordIndex) {
+            setSinoWordSelected({
+                rowIndex: -1,
+                wordIndex: -1
+            })
+        }
+        else {
+            setSinoWordSelected({
+                rowIndex,
+                wordIndex
+            })
+        }
+    }
+
+    const parseSinoToken = (text) => {
+        const arr = text.split(' ')
+        const token = []
+        for (let i = 0; i < arr.length; i ++) {
+            if (arr[i].indexOf(',') >= 0) {
+                const arr1 = arr[i].split(',')
+                for (let j = 0; j < arr1.length; j ++) {
+                    if (arr1[j] === '') {
+                        arr1[j] = ','
+                    }
+                    token.push(arr1[j])
+                }
+            }
+            else if (arr[i].indexOf('？') >= 0) {
+                const arr1 = arr[i].split('？')
+                for (let j = 0; j < arr1.length; j ++) {
+                    if (arr1[j] === '') {
+                        arr1[j] = '?'
+                    }
+                    token.push(arr1[j])
+                }
+            }
+            else {
+                token.push(arr[i])
+            }
+        }
+
+        return token
+    }
+
+    const parseChineseToken = (text) => {
+        const arr = text.split('')
+        const token = []
+        for (let i = 0; i < arr.length; i ++) {
+            if (arr[i].length > 1) {
+                const arr1 = arr[i].split('')
+                for (let j = 0; j < arr1.length; j ++) {
+                    token.push(arr1[j])
+                }
+            }
+            else {
+                token.push(arr[i])
+            }
+        }
+
+        return token
+    }
+
+    const renderChinese = (rowIndex, text) => {
+        return parseChineseToken(text)
+            .map((xs, xsi) =>
+                <button
+                    onClick={() => handleClickSinoWord(rowIndex, xsi)}
+                    data-row-index={rowIndex}
+                    data-word-index={xsi}
+                    className={`inline-block rounded text-left ${rowIndex === sinoWordSelected.rowIndex && xsi === sinoWordSelected.wordIndex ? 'bg-yellow-300 rounded' : ''}`}>
+                    {xs}</button>
+            )
+    }
+
+    const renderSino = (rowIndex, text) => {
+        return parseSinoToken(text).map((xs, xsi) =>
+            <button
+                onClick={() => handleClickSinoWord(rowIndex, xsi)}
+                className={`text-xl inline-block ${[',', '？', '?'].indexOf(xs) < 0 ? 'px-[2px]' : ''} text-left ${rowIndex === sinoWordSelected.rowIndex && xsi === sinoWordSelected.wordIndex ? 'bg-yellow-300 rounded' : ''}`}>{xs}</button>)
+    }
+
     return (
         <div className="mx-auto px-4 py-4">
 
@@ -201,8 +287,13 @@ export const App = () => {
                     <div className={'col-span-2'}>
                         {translateArr.map((x, i) => (
                             <div className={'w-full mb-4'} key={i}>
-                                <div className={'text-3xl'}><span className={'rounded bg-green-200 p-2 text-xs'}>{i+1}</span> {x.source}</div>
-                                <div className={'text-md text-blue-600'}>{x.sino}</div>
+                                <div className={'text-3xl'}>
+                                    <span className={'rounded bg-green-200 p-2 text-xs'}>{i+1}</span>
+                                    {renderChinese(i, x.source)}
+                                </div>
+                                <div className={'text-md text-blue-600'}>
+                                    {renderSino(i, x.sino)}
+                                </div>
                                 <textarea
                                     value={x.predict}
                                     onChange={e => handleChangeTranslateLine(i, e.target.value)}
