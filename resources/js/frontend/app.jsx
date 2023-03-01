@@ -2,7 +2,7 @@ import React, {useState} from 'react'
 import Toastify from 'toastify-js'
 import "toastify-js/src/toastify.css"
 import axios from 'axios';
-import {Modal} from "antd";
+import {Input, Modal} from "antd";
 
 export const App = () => {
     const [chinese, setChinese] = useState("")
@@ -91,21 +91,19 @@ export const App = () => {
      * @param row
      */
     const handleUpdatePhrase = (e, row) => {
-        if (e.code === "Enter") {
-            saveAddPhrase(row.source, e.target.value, 'PHRASE')
-                .then(() => {
-                    Toastify({
-                        text: "Update successfully",
-                        backgroundColor: '#28a745'
-                    }).showToast();
-                })
-                .catch((error) => {
-                    Toastify({
-                        text: error.response.data.message || error.message || "Error",
-                        backgroundColor: "red"
-                    }).showToast();
-                })
-        }
+        saveAddPhrase(row.source, e.target.value, 'PHRASE')
+            .then(() => {
+                Toastify({
+                    text: "Update successfully",
+                    backgroundColor: '#28a745'
+                }).showToast();
+            })
+            .catch((error) => {
+                Toastify({
+                    text: error.response.data.message || error.message || "Error",
+                    backgroundColor: "red"
+                }).showToast();
+            })
     }
 
     const handleChangeTranslateLine = (index, value) => {
@@ -139,25 +137,22 @@ export const App = () => {
         const arr = text.split(' ')
         const token = []
         for (let i = 0; i < arr.length; i ++) {
-            if (arr[i].indexOf(',') >= 0) {
-                const arr1 = arr[i].split(',')
-                for (let j = 0; j < arr1.length; j ++) {
-                    if (arr1[j] === '') {
-                        arr1[j] = ','
+            const chars = [',', '？', '；', ';', '?', '、']
+            let hasSpecialChars = false
+            chars.forEach((c) => {
+                if (arr[i].indexOf(c) >= 0) {
+                    hasSpecialChars = true
+                    const arr1 = arr[i].split(c)
+                    for (let j = 0; j < arr1.length; j ++) {
+                        if (arr1[j] === '') {
+                            arr1[j] = c
+                        }
+                        token.push(arr1[j])
                     }
-                    token.push(arr1[j])
                 }
-            }
-            else if (arr[i].indexOf('？') >= 0) {
-                const arr1 = arr[i].split('？')
-                for (let j = 0; j < arr1.length; j ++) {
-                    if (arr1[j] === '') {
-                        arr1[j] = '?'
-                    }
-                    token.push(arr1[j])
-                }
-            }
-            else {
+            })
+
+            if (!hasSpecialChars) {
                 token.push(arr[i])
             }
         }
@@ -186,26 +181,26 @@ export const App = () => {
     const renderChinese = (rowIndex, text) => {
         return parseChineseToken(text)
             .map((xs, xsi) =>
-                <button
+                <span
                     onClick={() => handleClickSinoWord(rowIndex, xsi)}
                     data-row-index={rowIndex}
                     data-word-index={xsi}
                     className={`inline-block rounded text-left ${rowIndex === sinoWordSelected.rowIndex && xsi === sinoWordSelected.wordIndex ? 'bg-yellow-300 rounded' : ''}`}>
-                    {xs}</button>
+                    {xs}</span>
             )
     }
 
     const renderSino = (rowIndex, text) => {
         return parseSinoToken(text).map((xs, xsi) =>
-            <button
+            <span
                 onClick={() => handleClickSinoWord(rowIndex, xsi)}
-                className={`text-xl inline-block ${[',', '？', '?'].indexOf(xs) < 0 ? 'px-[2px]' : ''} text-left ${rowIndex === sinoWordSelected.rowIndex && xsi === sinoWordSelected.wordIndex ? 'bg-yellow-300 rounded' : ''}`}>{xs}</button>)
+                className={`text-xl inline-block ${[',', '？', '?'].indexOf(xs) < 0 ? 'px-[2px]' : ''} text-left ${rowIndex === sinoWordSelected.rowIndex && xsi === sinoWordSelected.wordIndex ? 'bg-yellow-300 rounded' : ''}`}>{xs}</span>)
     }
 
     return (
         <div className="mx-auto px-4 py-4">
 
-            <div className={'fixed top-0 left-0'}>
+            <div className={'fixed top-0 left-0 z-50'}>
                 <div className="bg-white">
                     <h1 className="text-3xl flex justify-center uppercase mb-2">Chinese to Vietnamese translator</h1>
                     <div className="grid grid-cols-2 gap-5 p-4">
@@ -294,10 +289,10 @@ export const App = () => {
                                 <div className={'text-md text-blue-600'}>
                                     {renderSino(i, x.sino)}
                                 </div>
-                                <textarea
+                                <Input.TextArea
                                     value={x.predict}
                                     onChange={e => handleChangeTranslateLine(i, e.target.value)}
-                                    onKeyPress={e => handleUpdatePhrase(e, x)}
+                                    onPressEnter={e => handleUpdatePhrase(e, x)}
                                     className={'border rounded border-[1px] border-grey-300 p-2 w-full bg-yellow-200'} />
                             </div>
                         ))}
