@@ -8,6 +8,7 @@ use App\Models\SyntaxMeaning;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 
 class IndexController extends Controller
 {
@@ -20,6 +21,11 @@ class IndexController extends Controller
 
         $result = collect();
         if ($chinese) {
+
+            if (mb_strlen($chinese) >= 100) {
+                throw new BadRequestException('Limit 10,000 characters');
+            }
+
             $translatedContent = $chinese;
             $translatedContent = strip_tags($translatedContent);
             $translatedContent = str_replace("\r\n", '', $translatedContent);
