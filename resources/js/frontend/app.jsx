@@ -248,7 +248,7 @@ export const App = () => {
                             <h1 className="text-3xl flex justify-center uppercase mb-2">Thêm từ điển</h1>
                             <div className="grid grid-cols-3 my-4 gap-5">
                                 <div>
-                                    <label htmlFor="update-chinese">Chinese</label>
+                                    <label htmlFor="update-chinese">Chinese <b className={'bold text-red-500'}>*</b></label>
                                     <input
                                         id="update-chinese"
                                         className="border rounded px-2 py-2 w-full"
@@ -258,7 +258,7 @@ export const App = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label htmlFor="update-vietnamese">Vietnamese</label>
+                                    <label htmlFor="update-vietnamese">Vietnamese <b className={'bold text-red-500'}>*</b></label>
                                     <input
                                         id="update-vietnamese"
                                         className="border rounded px-2 py-2 w-full"
