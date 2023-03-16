@@ -25,5 +25,11 @@ services:
       POSTGRES_PASSWORD: root
       POSTGRES_DB: chinese-translator
 
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+
 volumes:
   postgres:
