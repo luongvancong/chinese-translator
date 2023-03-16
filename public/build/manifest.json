@@ -4,12 +4,12 @@
     "src": "resources/js/frontend/index.css"
   },
   "resources/css/frontend/app.css": {
-    "file": "assets/app-5c031505.css",
+    "file": "assets/app-2338957b.css",
     "src": "resources/css/frontend/app.css",
     "isEntry": true
   },
   "resources/js/frontend/index.jsx": {
-    "file": "assets/index-86132546.js",
+    "file": "assets/index-47d7052d.js",
     "src": "resources/js/frontend/index.jsx",
     "isEntry": true,
     "css": [

@@ -3,6 +3,7 @@ import Toastify from 'toastify-js'
 import "toastify-js/src/toastify.css"
 import axios from 'axios';
 import {Input, Modal} from "antd";
+import lodash from 'lodash'
 
 export const App = () => {
     const [chinese, setChinese] = useState("")
@@ -136,8 +137,11 @@ export const App = () => {
     const parseSinoToken = (text) => {
         const arr = text.split(' ')
         const token = []
+
+        const regex = /[0-9]+/gm;
+
         for (let i = 0; i < arr.length; i ++) {
-            const chars = [',', '？', '；', ';', '?', '、']
+            const chars = [',', '？', '；', ';', '?', '、', '《', '》']
             let hasSpecialChars = false
             chars.forEach((c) => {
                 if (arr[i].indexOf(c) >= 0) {
@@ -178,23 +182,32 @@ export const App = () => {
         return token
     }
 
-    const renderChinese = (rowIndex, text) => {
-        return parseChineseToken(text)
+    const renderChinese = (rowIndex, sinoTokens) => {
+        return sinoTokens
             .map((xs, xsi) =>
                 <span
+                    key={`c-${rowIndex}-${xsi}`}
                     onClick={() => handleClickSinoWord(rowIndex, xsi)}
                     data-row-index={rowIndex}
                     data-word-index={xsi}
-                    className={`inline-block rounded text-left ${rowIndex === sinoWordSelected.rowIndex && xsi === sinoWordSelected.wordIndex ? 'bg-yellow-300 rounded' : ''}`}>
-                    {xs}</span>
+                    className={`cursor-pointer inline-block rounded text-left ${rowIndex === sinoWordSelected.rowIndex && xsi === sinoWordSelected.wordIndex ? 'bg-yellow-300 rounded' : ''}`}>
+                    {lodash.map(xs, (v, k) => k)}</span>
             )
     }
 
-    const renderSino = (rowIndex, text) => {
-        return parseSinoToken(text).map((xs, xsi) =>
-            <span
-                onClick={() => handleClickSinoWord(rowIndex, xsi)}
-                className={`text-xl inline-block ${[',', '？', '?'].indexOf(xs) < 0 ? 'px-[2px]' : ''} text-left ${rowIndex === sinoWordSelected.rowIndex && xsi === sinoWordSelected.wordIndex ? 'bg-yellow-300 rounded' : ''}`}>{xs}</span>)
+    const renderSino = (rowIndex, sinoTokens) => {
+        return sinoTokens.map((xs, xsi) => {
+            const text = lodash.map(xs, v => v)
+            return (
+                <span
+                    key={`sino-${rowIndex}-${xsi}`}
+                    data-row-index={rowIndex}
+                    data-word-index={xsi}
+                    onClick={() => handleClickSinoWord(rowIndex, xsi)}
+                    className={`cursor-pointer text-xl inline-block ${[',', '？', '?', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'].indexOf(text[0]) < 0 ? 'px-[2px]' : ''} text-left ${rowIndex === sinoWordSelected.rowIndex && xsi === sinoWordSelected.wordIndex ? 'bg-yellow-300 rounded' : ''}`}>
+                {text[0]}</span>
+            )
+        })
     }
 
     return (
@@ -284,10 +297,10 @@ export const App = () => {
                             <div className={'w-full mb-4'} key={i}>
                                 <div className={'text-3xl'}>
                                     <span className={'rounded bg-green-200 p-2 text-xs'}>{i+1}</span>
-                                    {renderChinese(i, x.source)}
+                                    {renderChinese(i, x.sino_tokens)}
                                 </div>
                                 <div className={'text-md text-blue-600'}>
-                                    {renderSino(i, x.sino)}
+                                    {renderSino(i, x.sino_tokens)}
                                 </div>
                                 <Input.TextArea
                                     value={x.predict}

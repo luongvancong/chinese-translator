@@ -35,8 +35,10 @@ class IndexController extends Controller
 
             foreach ($lineByLineContent as $line) {
                 $content = $this->translate($line);
+                $sino = $this->getSinoVietnamese($line);
                 $result->push([
-                    'sino' => $this->getSinoVietnamese($line),
+                    'sino' => $sino,
+                    'sino_tokens' => $this->getSinoTokens($line),
                     'source' => $line,
                     'predict' => $content
                 ]);
@@ -83,10 +85,11 @@ class IndexController extends Controller
         return trim($translatedContent);
     }
 
-    public function getSinoVietnamese($translatedContent): string
+    public function getSinoVietnamese($translatedContent)
     {
         preg_match_all('/\p{Han}/u', $translatedContent, $matches);
         $arrWord = array_unique($matches[0]);
+
         $meaning = Meaning::query()
             ->whereIn('word', $arrWord)
             ->orderBy('priority', 'DESC')
@@ -94,12 +97,34 @@ class IndexController extends Controller
 
         foreach ($meaning as $item) {
             $translatedContent = str_replace($item->word, $item->sino . ' ', $translatedContent);
-            $translatedContent = preg_replace('!\s+!', ' ', $translatedContent);
         }
 
         $translatedContent = str_replace(' ，', ', ', $translatedContent);
 
         return trim($translatedContent);
+    }
+
+    public function getSinoTokens($translatedContent) {
+        $rawArrWord = mb_str_split($translatedContent);
+        $arrWord = array_unique($rawArrWord);
+        $tokens = [];
+
+        $meaning = Meaning::query()
+            ->whereIn('word', $arrWord)
+            ->orderBy('priority', 'DESC')
+            ->get();
+
+        foreach ($rawArrWord as $i => $word) {
+            $tokens[$i][$word] = $word;
+            foreach ($meaning as $item) {
+                if ($word === $item->word) {
+                    $tokens[$i][$word] = $item->sino;
+                    break;
+                }
+            }
+        }
+
+        return $tokens;
     }
 
     public function processWordByWord($translatedContent): string
