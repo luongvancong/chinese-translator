@@ -22,7 +22,7 @@ class IndexController extends Controller
         $result = collect();
         if ($chinese) {
 
-            if (mb_strlen($chinese) >= 100) {
+            if (mb_strlen($chinese) >= 10000) {
                 throw new BadRequestException('Limit 10,000 characters');
             }
 
