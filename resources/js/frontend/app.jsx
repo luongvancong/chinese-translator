@@ -277,6 +277,7 @@ export const App = () => {
                                     >
                                         <option value="">--</option>
                                         <option value="NAME">Tên nhân vật</option>
+                                        <option value="PHA"></option>
                                     </select>
                                 </div>
                             </div>
