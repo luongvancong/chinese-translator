@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Frontend\Home;
 
 use App\Http\Controllers\Controller;
 use App\Models\Meaning;
+use App\Models\Phrase;
 use App\Models\SyntaxMeaning;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -58,7 +59,7 @@ class IndexController extends Controller
 
         $meaningRows = Meaning::query()
             ->where('priority', '>', 1)
-            ->where('priority', '<=', 100)
+            ->where('priority', '<=', mb_strlen($text))
             ->orderBy('priority', 'DESC')
             ->orderBy('word_length', 'DESC')
             ->get();
@@ -146,14 +147,32 @@ class IndexController extends Controller
     }
 
     public function processPhrase($translatedContent) {
-        $meaningRows = Meaning::query()
-            ->where('type', 'PHRASE')
+        ini_set('memory_limit', '-1');
+        $maxLength = Phrase::query()->max('priority');
+        $strLen = mb_strlen($translatedContent);
+        if ($strLen > $maxLength)  $strLen = $maxLength;
+
+        $arrPhrase = [];
+        for ($i = $strLen; $i > 3; $i--) {
+            $temp = $this->text2phrase($translatedContent, $i);
+            foreach ($temp as $x) {
+                $arrPhrase[] = $x;
+            }
+        }
+
+        $arrPhrase = array_unique($arrPhrase);
+
+//        dd($arrPhrase);
+
+        $meaningRows = Phrase::query()
+            ->whereIn('phrase', $arrPhrase)
             ->orderBy('priority', 'DESC')
-            ->orderBy('word_length', 'DESC')
             ->get();
 
+//        dd($meaningRows);
+
         foreach ($meaningRows as $item) {
-            $translatedContent = str_replace($item->word, $item->meaning . ' ', $translatedContent);
+            $translatedContent = str_replace($item->phrase, $item->meaning . ' ', $translatedContent);
         }
 
         return trim($translatedContent);
@@ -300,5 +319,21 @@ class IndexController extends Controller
         return array_filter($arr, function($value) {
             return !!$value;
         });
+    }
+
+    public function text2phrase($string, $phraseLength) {
+        $arr = mb_str_split($string);
+        $len = count($arr);
+
+        $result = [];
+
+        for ($i = 0; $i < $len; $i++) {
+            $temp = mb_substr($string, $i, $phraseLength);
+            if (mb_strlen($temp) == $phraseLength) {
+                $result[] = $temp;
+            }
+        }
+
+        return $result;
     }
 }
