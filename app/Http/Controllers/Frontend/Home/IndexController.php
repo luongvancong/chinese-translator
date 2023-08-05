@@ -9,6 +9,8 @@ use App\Models\SyntaxMeaning;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 
 class IndexController extends Controller
@@ -284,33 +286,52 @@ class IndexController extends Controller
         $chinese = trim($chinese);
         $chinese = str_replace("\n", "", $chinese);
         $chinese = str_replace("\r\n", "", $chinese);
+
+        $chineseLength = mb_strlen($chinese);
         $meaning = trim($meaning);
         $meaning = str_replace("\n", "", $meaning);
         $meaning = str_replace("\r\n", "", $meaning);
 
-        $exist = Meaning::query()
-            ->where('word', $chinese)
-            ->where('type', $type)
-            ->orderBy('priority', 'DESC')
-            ->first();
-
-        $m = new Meaning();
-        $m->priority = mb_strlen($chinese);
-        $m->word = $chinese;
-        $m->meaning = $meaning;
-        $m->type = $type;
-        $m->word_length = mb_strlen($chinese);
-        $m->sino = $this->processWordByWord($meaning);
-
-        if ($exist) {
-            $m->priority = $exist->priority + 1;
+        if (mb_strlen($chinese) >= 4) {
+            Phrase::query()
+                ->upsert([
+                    'phrase' => $chinese,
+                    'sino' => $this->getSinoVietnamese($chinese),
+                    'meaning' => $meaning,
+                    'length' => $chineseLength,
+                    'priority' => $chineseLength,
+                    'created_at' => Carbon::now()->toISOString(),
+                    'updated_at' => Carbon::now()->toISOString()
+                ], ['phrase'], [
+                    'length' => $chineseLength,
+                    'priority' => $chineseLength,
+                    'updated_at' => Carbon::now()->toISOString()
+                ]);
         }
+        else {
+            $exist = Meaning::query()
+                ->where('word', $chinese)
+                ->where('type', $type)
+                ->orderBy('priority', 'DESC')
+                ->first();
 
-        $m->save();
+            $m = new Meaning();
+            $m->priority = mb_strlen($chinese);
+            $m->word = $chinese;
+            $m->meaning = $meaning;
+            $m->type = $type;
+            $m->word_length = mb_strlen($chinese);
+            $m->sino = $this->processWordByWord($meaning);
+
+            if ($exist) {
+                $m->priority = $exist->priority + 1;
+            }
+
+            $m->save();
+        }
 
         return response()->json([
             'message' => sprintf("%s has been successfully added", $chinese),
-            'data' => $m
         ]);
     }
 
