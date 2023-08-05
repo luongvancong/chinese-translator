@@ -2,10 +2,11 @@ import React, {useState} from 'react'
 import Toastify from 'toastify-js'
 import "toastify-js/src/toastify.css"
 import axios from 'axios';
-import {Input, Modal} from "antd";
+import {Input, Modal, Spin} from "antd";
 import lodash from 'lodash'
 
 export const App = () => {
+    const [loading, setLoading] = useState(false)
     const [chinese, setChinese] = useState("")
     const [translateArr, setTranslateArr] = useState([])
     const [formAddPhrase, setFormAddPhrase] = useState({
@@ -38,6 +39,7 @@ export const App = () => {
 
     const handleTranslate = (e) => {
         e.preventDefault()
+        setLoading(true)
         axios({
             url: `/?_token=${_token}`,
             method: 'POST',
@@ -46,9 +48,11 @@ export const App = () => {
             }
         })
             .then(response => {
+                setLoading(false)
                 setTranslateArr([...response.data])
             })
             .catch((error) => {
+                setLoading(false)
                 Toastify({
                     text: error.response.data.message || error.message || "Error",
                     backgroundColor: "red"
@@ -291,28 +295,32 @@ export const App = () => {
                 </div>
             </div>
 
-            <div className="my-4 bg-red mt-[400px]">
-                <div className={'grid grid-cols-1 gap-5'}>
-                    <div className={'col-span-2'}>
-                        {translateArr.map((x, i) => (
-                            <div className={'w-full mb-4'} key={i}>
-                                <div className={'text-3xl'}>
-                                    <span className={'rounded bg-green-200 p-2 text-xs'}>{i+1}</span>
-                                    {renderChinese(i, x.sino_tokens)}
+            <Spin spinning={loading}>
+                <div className="my-4 bg-red mt-[400px]">
+                    <div className={'grid grid-cols-1 gap-5'}>
+                        <div className={'col-span-2'}>
+                            {translateArr.map((x, i) => (
+                                <div className={'w-full mb-4'} key={i}>
+                                    <div className={'text-3xl'}>
+                                        <span className={'rounded bg-green-200 p-2 text-xs'}>{i+1}</span>
+                                        {renderChinese(i, x.sino_tokens)}
+                                    </div>
+                                    <div className={'text-md text-blue-600'}>
+                                        {renderSino(i, x.sino_tokens)}
+                                    </div>
+                                    <Input.TextArea
+                                        value={x.predict}
+                                        onChange={e => handleChangeTranslateLine(i, e.target.value)}
+                                        onPressEnter={e => handleUpdatePhrase(e, x)}
+                                        className={'border rounded border-[1px] border-grey-300 p-2 w-full bg-yellow-200'} />
                                 </div>
-                                <div className={'text-md text-blue-600'}>
-                                    {renderSino(i, x.sino_tokens)}
-                                </div>
-                                <Input.TextArea
-                                    value={x.predict}
-                                    onChange={e => handleChangeTranslateLine(i, e.target.value)}
-                                    onPressEnter={e => handleUpdatePhrase(e, x)}
-                                    className={'border rounded border-[1px] border-grey-300 p-2 w-full bg-yellow-200'} />
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 </div>
-            </div>
+            </Spin>
+
+
 
             <Modal
                 width={800}
