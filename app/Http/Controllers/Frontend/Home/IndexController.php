@@ -162,13 +162,16 @@ class IndexController extends Controller
             }
         }
 
-        $meaningRows = Phrase::query()
-            ->whereRaw("(phrase similar to '%(". join('|', $arrPhrase) .")%')")
-            ->orderBy('priority', 'DESC')
-            ->get();
+        foreach ($arrPhrase as $phrase) {
+            $meaningRows = Phrase::query()
+                ->where('phrase', 'LIKE', '%'. $phrase .'%')
+                ->where('priority', '>=', mb_strlen($phrase))
+                ->orderBy('priority', 'DESC')
+                ->get();
 
-        foreach ($meaningRows as $item) {
-            $translatedContent = str_replace($item->phrase, $item->meaning . ' ', $translatedContent);
+            foreach ($meaningRows as $item) {
+                $translatedContent = str_replace($item->phrase, $item->meaning . ' ', $translatedContent);
+            }
         }
 
         return trim($translatedContent);
