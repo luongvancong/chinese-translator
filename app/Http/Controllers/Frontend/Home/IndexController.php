@@ -155,23 +155,17 @@ class IndexController extends Controller
         if ($strLen > $maxLength)  $strLen = $maxLength;
 
         $arrPhrase = [];
-        for ($i = $strLen; $i > 3; $i--) {
+        for ($i = $strLen; $i >= 3; $i--) {
             $temp = $this->text2phrase($translatedContent, $i);
             foreach ($temp as $x) {
                 $arrPhrase[] = $x;
             }
         }
 
-        $arrPhrase = array_unique($arrPhrase);
-
-//        dd($arrPhrase);
-
         $meaningRows = Phrase::query()
-            ->whereIn('phrase', $arrPhrase)
+            ->whereRaw("(phrase similar to '%(". join('|', $arrPhrase) .")%')")
             ->orderBy('priority', 'DESC')
             ->get();
-
-//        dd($meaningRows);
 
         foreach ($meaningRows as $item) {
             $translatedContent = str_replace($item->phrase, $item->meaning . ' ', $translatedContent);
