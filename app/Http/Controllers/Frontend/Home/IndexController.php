@@ -150,6 +150,7 @@ class IndexController extends Controller
 
     public function processPhrase($translatedContent) {
         ini_set('memory_limit', '-1');
+
         $maxLength = Phrase::query()->max('priority');
         $strLen = mb_strlen($translatedContent);
         if ($strLen > $maxLength)  $strLen = $maxLength;
@@ -162,16 +163,14 @@ class IndexController extends Controller
             }
         }
 
-        foreach ($arrPhrase as $phrase) {
-            $meaningRows = Phrase::query()
-                ->where('phrase', 'LIKE', '%'. $phrase .'%')
-                ->where('priority', '>=', mb_strlen($phrase))
-                ->orderBy('priority', 'DESC')
-                ->get();
+        $meaningRows = Phrase::query()
+            ->where('phrase', 'IN', $arrPhrase)
+            ->where('priority', '>=', $strLen)
+            ->orderBy('priority', 'DESC')
+            ->get();
 
-            foreach ($meaningRows as $item) {
-                $translatedContent = str_replace($item->phrase, $item->meaning . ' ', $translatedContent);
-            }
+        foreach ($meaningRows as $item) {
+            $translatedContent = str_replace($item->phrase, $item->meaning . ' ', $translatedContent);
         }
 
         return trim($translatedContent);
@@ -339,16 +338,22 @@ class IndexController extends Controller
         });
     }
 
-    public function text2phrase($string, $phraseLength) {
-        $arr = mb_str_split($string);
-        $len = count($arr);
-
+    public function text2phrase($string, $phraseLength): array
+    {
         $result = [];
+        $ignoreChars = ['，', '：', '、', '。', ' ', ',', '.'];
 
-        for ($i = 0; $i < $len; $i++) {
-            $temp = mb_substr($string, $i, $phraseLength);
-            if (mb_strlen($temp) == $phraseLength) {
-                $result[] = $temp;
+        foreach ($ignoreChars as $c) {
+            $phrases = explode($c, $string);
+            foreach ($phrases as $phrase) {
+                $phrase = str_replace($ignoreChars, "", $phrase);
+                $len = mb_strlen($phrase);
+                for ($i = 0; $i < $len; $i++) {
+                    $temp = mb_substr($phrase, $i, $phraseLength);
+                    if (mb_strlen($temp) == $phraseLength) {
+                        $result[] = $temp;
+                    }
+                }
             }
         }
 
