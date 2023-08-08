@@ -162,6 +162,7 @@ class IndexController extends Controller
                 $arrPhrase[] = $x;
             }
         }
+        $arrPhrase = array_unique($arrPhrase);
 
         $minLengthPhrase = 0;
         $maxLengthPhrase = 0;
@@ -177,8 +178,9 @@ class IndexController extends Controller
         }
 
         $meaningRows = Phrase::query()
-            ->where('phrase', 'IN', $arrPhrase)
-            ->whereBetween('priority', [$minLengthPhrase, $maxLengthPhrase])
+            ->whereIn('phrase', $arrPhrase)
+            ->where('priority', '>=', $minLengthPhrase)
+            ->where('priority', '<=', $maxLengthPhrase)
             ->orderBy('priority', 'DESC')
             ->get();
 
@@ -370,6 +372,6 @@ class IndexController extends Controller
             }
         }
 
-        return $result;
+        return array_unique($result);
     }
 }
