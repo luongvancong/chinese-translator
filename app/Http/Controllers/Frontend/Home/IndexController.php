@@ -163,9 +163,22 @@ class IndexController extends Controller
             }
         }
 
+        $minLengthPhrase = 0;
+        $maxLengthPhrase = 0;
+        foreach ($arrPhrase as $x) {
+            $xLen = mb_strlen($x);
+            if ($xLen > $maxLengthPhrase) {
+                $maxLengthPhrase = $xLen;
+            }
+
+            if ($xLen < $minLengthPhrase) {
+                $minLengthPhrase = $xLen;
+            }
+        }
+
         $meaningRows = Phrase::query()
             ->where('phrase', 'IN', $arrPhrase)
-            ->where('priority', '>=', $strLen)
+            ->whereBetween('priority', [$minLengthPhrase, $maxLengthPhrase])
             ->orderBy('priority', 'DESC')
             ->get();
 
