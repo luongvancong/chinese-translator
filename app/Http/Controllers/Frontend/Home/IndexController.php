@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Frontend\Home;
 use App\Http\Controllers\Controller;
 use App\Models\Meaning;
 use App\Models\Phrase;
+use App\Models\SinoVietNamese;
 use App\Models\SyntaxMeaning;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -90,21 +91,7 @@ class IndexController extends Controller
 
     public function getSinoVietnamese($translatedContent)
     {
-        preg_match_all('/\p{Han}/u', $translatedContent, $matches);
-        $arrWord = array_unique($matches[0]);
-
-        $meaning = Meaning::query()
-            ->whereIn('word', $arrWord)
-            ->orderBy('priority', 'DESC')
-            ->get();
-
-        foreach ($meaning as $item) {
-            $translatedContent = str_replace($item->word, $item->sino . ' ', $translatedContent);
-        }
-
-        $translatedContent = str_replace(' ，', ', ', $translatedContent);
-
-        return trim($translatedContent);
+        return \App\Modules\SinoVietNamese\Util\Util::getSinoVietNamese($translatedContent);
     }
 
     public function getSinoTokens($translatedContent) {
@@ -332,7 +319,7 @@ class IndexController extends Controller
             $m->meaning = $meaning;
             $m->type = $type;
             $m->word_length = mb_strlen($chinese);
-            $m->sino = $this->processWordByWord($meaning);
+            $m->sino = $this->getSinoVietnamese($chinese);
 
             if ($exist) {
                 $m->priority = $exist->priority + 1;
