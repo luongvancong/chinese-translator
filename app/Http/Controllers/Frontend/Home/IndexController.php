@@ -275,10 +275,10 @@ class IndexController extends Controller
             $meaning = mb_strtolower($meaning);
         }
 
-        if (mb_strlen($chinese) < 2) {
+        if (mb_strlen($chinese) < 1) {
             return response()->json([
-                'message' => 'Word length minimum is 2'
-            ]);
+                'message' => 'Word length minimum is 1'
+            ], 400);
         }
 
         $chinese = trim($chinese);
