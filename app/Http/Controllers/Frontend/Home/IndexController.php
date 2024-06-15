@@ -271,7 +271,7 @@ class IndexController extends Controller
         $chinese = trim($chinese);
         $meaning = trim($meaning);
 
-        if (!in_array($type, [Meaning::TYPE['NAME'], Meaning::TYPE['PHRASE']])) {
+        if ($type && !in_array($type, [Meaning::TYPE['NAME'], Meaning::TYPE['PHRASE']])) {
             $meaning = mb_strtolower($meaning);
         }
 
