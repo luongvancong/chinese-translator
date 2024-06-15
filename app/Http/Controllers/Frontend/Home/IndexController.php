@@ -290,7 +290,7 @@ class IndexController extends Controller
         $meaning = str_replace("\n", "", $meaning);
         $meaning = str_replace("\r\n", "", $meaning);
 
-        if (mb_strlen($chinese) >= 4) {
+        if (!$type && mb_strlen($chinese) >= 4) {
             Phrase::query()
                 ->upsert([
                     'phrase' => $chinese,
