@@ -119,20 +119,21 @@ class IndexController extends Controller
 
     public function processWordByWord($translatedContent): string
     {
-        $translatedContent = mb_strtolower($translatedContent);
-        preg_match_all('/\p{Han}/u', $translatedContent, $matches);
+        $_translatedContent = $translatedContent;
+        preg_match_all('/\p{Han}/u', $_translatedContent, $matches);
         $arrWord = array_unique($matches[0]);
+
         $meaning = Meaning::query()
             ->whereIn('word', $arrWord)
             ->orderBy('priority', 'DESC')
             ->get();
 
         foreach ($meaning as $item) {
-            $translatedContent = str_replace($item->word, $item->meaning . ' ', $translatedContent);
-            $translatedContent = preg_replace('!\s+!', ' ', $translatedContent);
+            $_translatedContent = str_replace($item->word, $item->meaning . ' ', $_translatedContent);
+            $_translatedContent = preg_replace('!\s+!', ' ', $_translatedContent);
         }
 
-        return trim($translatedContent);
+        return trim($_translatedContent);
     }
 
     public function processPhrase($translatedContent) {
