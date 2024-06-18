@@ -21,10 +21,12 @@ function convertYearString($input) {
 function convertRegexMeaning($text) {
     $arrRegex = [
         "#对(.*)来说(.*)是(.*)#",
-        '#接下来看(.+)在干什么#'
+        '#接下来看(.+)在干什么#',
+        '#(\d{4})年(\d{1,2})月(\d{1,2})(.+)时#',
+        '#例(.{1})#'
     ];
 
-    $arrReplace = ['đối với $1 mà nói thì $2 là $3', 'tiếp nhìn xem $1 đang làm gì'];
+    $arrReplace = ['đối với $1 mà nói thì $2 là $3', 'tiếp nhìn xem $1 đang làm gì', 'năm $1 tháng $2 ngày $3 giờ $4', 'ví dụ $1'];
 
     return preg_replace($arrRegex, $arrReplace, $text);
 
@@ -42,4 +44,6 @@ function convertRegexMeaning($text) {
 
 var_dump(convertRegexMeaning('对AAA来说BBB是CCC'));
 var_dump(convertRegexMeaning('接下来看YYYY在干什么'));
+var_dump(convertRegexMeaning('1981年3月18巳时'));
+var_dump(convertRegexMeaning('例A'));
 

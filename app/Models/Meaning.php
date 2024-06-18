@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
  *
  * @property string id
  * @property string word
- * @property string $type;
+ * @property string $type
  * @property int word_length
  * @property string meaning
  * @property string sino
