@@ -37,7 +37,8 @@ class AddNamed extends Command
             resource_path('csv/2.cach-cuc.csv'),
             resource_path('csv/3.thap-than.csv'),
             resource_path('csv/4.thuat-ngu.csv'),
-            resource_path('csv/5.than-sat.csv')
+            resource_path('csv/5.than-sat.csv'),
+            resource_path('csv/6.thien-can-dia-chi.csv')
         ];
 
         foreach ($files as $file) {
