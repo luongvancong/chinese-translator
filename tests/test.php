@@ -24,7 +24,8 @@ function convertRegexMeaning($text) {
         '#接下来看(.+)在干什么#',
         '#(\d{4})年(\d{1,2})月(\d{1,2})(.+)时#',
         '#例(.{1,2})#',
-        '#逢(.+)月时$#'
+        '#逢(.+)月时$#',
+        '#会失去(.+)#'
     ];
 
     $arrReplace = [
@@ -32,7 +33,8 @@ function convertRegexMeaning($text) {
         'tiếp nhìn xem $1 đang làm gì',
         'năm $1 tháng $2 ngày $3 giờ $4',
         'ví dụ $1',
-        'khi gặp tháng $1'
+        'khi gặp tháng $1',
+        'sẽ mất $1'
     ];
 
     return preg_replace($arrRegex, $arrReplace, $text);
@@ -54,3 +56,4 @@ var_dump(convertRegexMeaning('接下来看YYYY在干什么'));
 var_dump(convertRegexMeaning('1981年3月18巳时'));
 var_dump(convertRegexMeaning('例100'));
 var_dump(convertRegexMeaning('逢比劫月时'));
+var_dump(convertRegexMeaning('其次就是会失去正财或偏财'));

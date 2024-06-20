@@ -38,7 +38,7 @@ class IndexController extends Controller
             $lineByLineContent = $this->breakTextToArray($translatedContent);
 
             foreach ($lineByLineContent as $line) {
-                $content = $this->translate($line);
+                $content = ucfirst($this->translate($line));
                 $sino = $this->getSinoVietnamese($line);
                 $result->push([
                     'sino' => $sino,
