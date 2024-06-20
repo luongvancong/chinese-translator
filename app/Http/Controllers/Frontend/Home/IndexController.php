@@ -199,63 +199,19 @@ class IndexController extends Controller
             ->orderBy('priority', 'DESC')
             ->get();
 
-        foreach ($syntaxMeaningRows as $item) {
-            preg_match_all('/'.$item->pattern.'/u', $cleanContent, $matches);
+        $patterns = $syntaxMeaningRows->pluck('pattern')->toArray();
+        $replacements = $syntaxMeaningRows->pluck('meaning')->toArray();
 
-            if (isset($matches[2])) {
-                foreach ($matches[2] as $i => $word) {
-                    $word = strip_tags($word);
-                    $word = trim($word);
-
-                    $str = Arr::get($matches[0], $i);
-                    $str = strip_tags($str);
-                    $str = trim($str);
-
-                    $meaning = Meaning::query()
-                        ->where('word', $word)
-                        ->first();
-
-                    $word1 = Arr::has($matches, 3) ? Arr::get($matches[3], $i) : null;
-                    $word2 = Arr::has($matches, 4) ? Arr::get($matches[4], $i) : null;
-
-                    if ($meaning) {
-                        $meaningVn = str_replace('{any}', $meaning->meaning, $item->meaning);
-                        if ($word1) {
-                            $meaning1 = Meaning::query()
-                                ->where('word', $word1)
-                                ->first();
-
-                            if ($meaning1) {
-                                $meaningVn = str_replace('{any1}', $meaning1->meaning, $meaningVn);
-                            }
-                            else {
-                                $meaningVn = str_replace('{any1}', $word1, $meaningVn);
-                            }
-                        }
-
-                        if ($word2) {
-                            $meaning2 = Meaning::query()
-                                ->where('word', $word2)
-                                ->first();
-
-                            if ($meaning2) {
-                                $meaningVn = str_replace('{any2}', $meaning1->meaning, $meaningVn);
-                            }
-                            else {
-                                $meaningVn = str_replace('{any2}', $word2, $meaningVn);
-                            }
-                        }
-                    }
-                    else {
-                        $meaningVn = str_replace('{any}', $word, $item->meaning);
-                    }
-
-                    $translatedContent = str_replace($str, $meaningVn . ' ', $translatedContent);
-                }
-            }
+        $arr = explode('，', $cleanContent);
+        $arrTranslate = [];
+        foreach ($arr as $text) {
+            $temp = preg_replace($patterns, $replacements, $text);
+            $arrTranslate[] = $temp;
         }
 
-        return trim($translatedContent);
+        $cleanContent = implode('，', $arrTranslate);
+
+        return trim($cleanContent);
     }
 
     public function addWords(Request $request) {
