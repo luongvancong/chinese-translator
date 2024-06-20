@@ -199,7 +199,10 @@ class IndexController extends Controller
             ->orderBy('priority', 'DESC')
             ->get();
 
-        $patterns = $syntaxMeaningRows->pluck('pattern')->toArray();
+        $patterns = $syntaxMeaningRows->pluck('pattern')
+            ->map(function($pattern) {
+                return sprintf('#%s#', $pattern);
+            })->toArray();
         $replacements = $syntaxMeaningRows->pluck('meaning')->toArray();
 
         $arr = explode('，', $cleanContent);
