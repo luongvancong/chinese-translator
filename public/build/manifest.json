@@ -1,19 +1,19 @@
 {
+  "resources/css/frontend/app.css": {
+    "file": "assets/app-d7c1038c.css",
+    "isEntry": true,
+    "src": "resources/css/frontend/app.css"
+  },
   "resources/js/frontend/index.css": {
     "file": "assets/index-a461d729.css",
     "src": "resources/js/frontend/index.css"
   },
-  "resources/css/frontend/app.css": {
-    "file": "assets/app-8368c285.css",
-    "src": "resources/css/frontend/app.css",
-    "isEntry": true
-  },
   "resources/js/frontend/index.jsx": {
-    "file": "assets/index-58f210e0.js",
-    "src": "resources/js/frontend/index.jsx",
-    "isEntry": true,
     "css": [
       "assets/index-a461d729.css"
-    ]
+    ],
+    "file": "assets/index-ae975933.js",
+    "isEntry": true,
+    "src": "resources/js/frontend/index.jsx"
   }
 }

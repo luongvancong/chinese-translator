@@ -16,6 +16,7 @@ export const App = () => {
     })
 
     const [isShowModalTranslatedContent, setIsShowModalTranslatedContent] = useState(false)
+    const [isShowModalHanVietContent, setIsShowModalHanVietContent] = useState(false)
     const [sinoWordSelected, setSinoWordSelected] = useState({
         rowIndex: -1,
         wordIndex: -1
@@ -123,6 +124,10 @@ export const App = () => {
         setIsShowModalTranslatedContent(true)
     }
 
+    const handleViewHanVietContent = () => {
+        setIsShowModalHanVietContent(true)
+    }
+
     const handleClickSinoWord = (rowIndex, wordIndex) => {
         if (sinoWordSelected.rowIndex === rowIndex && sinoWordSelected.wordIndex === wordIndex) {
             setSinoWordSelected({
@@ -217,28 +222,35 @@ export const App = () => {
     return (
         <div className="mx-auto px-4 py-4">
 
-            <div className={'fixed top-0 left-0 z-50'}>
+            <div className={'md:fixed md:top-0 md:left-0 z-50'}>
                 <div className="bg-white">
                     <h1 className="text-3xl flex justify-center uppercase mb-2">Chinese to Vietnamese translator</h1>
                     <div className="grid grid-cols-2 gap-5 p-4">
-                        <div className={'border border-violet-300 rounded px-4 py-4'}>
+                        <div className={'col-span-2 md:col-span-1 border border-violet-300 rounded px-4 py-4'}>
                             <div className="w-full text-xl">Đoạn văn chữ Hán</div>
                             <textarea
                                 value={chinese}
                                 onChange={e => handleChangeInputSource(e.target.value.replaceAll("\n", ""))}
                                 className="w-full border border-blue-300 rounded resize-none h-[150px] px-4 py-4 overflow-auto mb-4" />
 
-                            <div className="flex justify-between">
-                                <div>
+                            <div className="flex flex-col gap-3 md:justify-between">
+                                <div className={'flex gap-3'}>
                                     <button
                                         onClick={handleTranslate}
-                                        className="rounded bg-blue-500 text-white uppercase text-xl py-2 px-5 disabled:bg-gray-500 disabled:text-black mr-4">
+                                        className="rounded bg-blue-500 text-white uppercase text-xl py-2 px-5 disabled:bg-gray-500 disabled:text-black">
                                         Dịch</button>
 
                                     {translateArr.length > 0 && (
-                                        <button
-                                            onClick={handleViewTranslatedContent}
-                                            className={'bg-red-500 text-white text-xl rounded py-2 px-5'}>Xem bản dịch</button>
+                                        <>
+                                            <button
+                                                onClick={handleViewTranslatedContent}
+                                                className={'bg-red-500 text-white text-xl rounded py-2 px-5'}>Xem bản
+                                                dịch
+                                            </button>
+                                            <button
+                                                onClick={handleViewHanVietContent}
+                                                className={'bg-blue-500 text-white text-xl rounded py-2 px-5'}>Xem hán việt</button>
+                                        </>
                                     )}
                                 </div>
                                 <div>
@@ -248,10 +260,10 @@ export const App = () => {
                             </div>
 
                         </div>
-                        <div className="border border-violet-300 rounded px-4 py-4">
+                        <div className="col-span-2 md:col-span-1 border border-violet-300 rounded px-4 py-4">
                             <h1 className="text-3xl flex justify-center uppercase mb-2">Thêm từ điển</h1>
                             <div className="grid grid-cols-3 my-4 gap-5">
-                                <div>
+                                <div className={'col-span-3 md:col-span-1'}>
                                     <label htmlFor="update-chinese">Chinese <b className={'bold text-red-500'}>*</b></label>
                                     <input
                                         id="update-chinese"
@@ -261,7 +273,7 @@ export const App = () => {
                                         onChange={e => handleChangedFormAddPhrase('chinese', e.target.value)}
                                     />
                                 </div>
-                                <div>
+                                <div className={'col-span-3 md:col-span-1'}>
                                     <label htmlFor="update-vietnamese">Vietnamese <b className={'bold text-red-500'}>*</b></label>
                                     <input
                                         id="update-vietnamese"
@@ -271,7 +283,7 @@ export const App = () => {
                                         onChange={e => handleChangedFormAddPhrase('meaning', e.target.value)}
                                     />
                                 </div>
-                                <div>
+                                <div className={'col-span-3 md:col-span-1'}>
                                     <label htmlFor="update-vietnamese">Loại</label>
                                     <select
                                         id="update-type"
@@ -296,7 +308,7 @@ export const App = () => {
             </div>
 
             <Spin spinning={loading}>
-                <div className="my-4 bg-red mt-[400px]">
+                <div className="my-4 bg-red md:mt-[400px]">
                     <div className={'grid grid-cols-1 gap-5'}>
                         <div className={'col-span-2'}>
                             {translateArr.map((x, i) => (
@@ -331,6 +343,18 @@ export const App = () => {
             >
                 {translateArr.map((x, i) => (
                     <p key={i} className={'mb-2'}>{x.predict}.</p>
+                ))}
+            </Modal>
+
+            <Modal
+                width={800}
+                title={'Bản dịch hán việt'}
+                open={isShowModalHanVietContent}
+                footer={null}
+                onCancel={() => setIsShowModalHanVietContent(false)}
+            >
+                {translateArr.map((x, i) => (
+                    <p key={i} className={'mb-2'}>{x.sino}.</p>
                 ))}
             </Modal>
         </div>
