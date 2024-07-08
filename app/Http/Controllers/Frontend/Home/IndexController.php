@@ -39,7 +39,7 @@ class IndexController extends Controller
 
             foreach ($lineByLineContent as $line) {
                 $content = ucfirst($this->translate($line));
-                $sino = $this->getSinoVietnamese($line);
+                $sino = ucfirst($this->getSinoVietnamese($line));
                 $result->push([
                     'sino' => $sino,
                     'sino_tokens' => $this->getSinoTokens($line),
