@@ -31,7 +31,7 @@ class IndexController extends Controller
             }
 
             $translatedContent = $chinese;
-            $translatedContent = strip_tags($translatedContent);
+//            $translatedContent = strip_tags($translatedContent);
             $translatedContent = str_replace("\r\n", '', $translatedContent);
             $translatedContent = str_replace("\n", '', $translatedContent);
 
@@ -55,7 +55,8 @@ class IndexController extends Controller
     public function translate($text) {
         $translatedContent = $text;
 
-        $translatedContent = strip_tags($translatedContent);
+//        $translatedContent = strip_tags($translatedContent);
+        $translatedContent = $this->clearDirtyCharacters($translatedContent);
         $translatedContent = $this->processPhrase($translatedContent);
         $translatedContent = $this->processName($translatedContent);
         $translatedContent = $this->processWithSyntax($translatedContent);
@@ -86,6 +87,8 @@ class IndexController extends Controller
         $translatedContent = str_replace('；', ', ', $translatedContent);
         $translatedContent = str_replace('、', ', ', $translatedContent);
         $translatedContent = str_replace('。', '. ', $translatedContent);
+        $translatedContent = str_replace('<', ' (', $translatedContent);
+        $translatedContent = str_replace('>', ') ', $translatedContent);
         return trim($translatedContent);
     }
 
