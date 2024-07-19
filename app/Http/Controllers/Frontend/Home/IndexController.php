@@ -176,6 +176,16 @@ class IndexController extends Controller
             $translatedContent = str_replace($item->phrase, $item->meaning . ' ', $translatedContent);
         }
 
+        $meaningRows = Meaning::query()
+            ->where('type', 'PHRASE')
+            ->where('word', $translatedContent)
+            ->orderBy('priority', 'DESC')
+            ->get();
+
+        foreach ($meaningRows as $item) {
+            $translatedContent = str_replace($item->word, $item->meaning . ' ', $translatedContent);
+        }
+
         return trim($translatedContent);
     }
 
