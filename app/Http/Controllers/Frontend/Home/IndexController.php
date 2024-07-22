@@ -31,7 +31,6 @@ class IndexController extends Controller
             }
 
             $translatedContent = $chinese;
-//            $translatedContent = strip_tags($translatedContent);
             $translatedContent = str_replace("\r\n", '', $translatedContent);
             $translatedContent = str_replace("\n", '', $translatedContent);
 
@@ -56,7 +55,7 @@ class IndexController extends Controller
         $translatedContent = $text;
 
 //        $translatedContent = strip_tags($translatedContent);
-        $translatedContent = $this->clearDirtyCharacters($translatedContent);
+//        $translatedContent = $this->clearDirtyCharacters($translatedContent);
         $translatedContent = $this->processPhrase($translatedContent);
         $translatedContent = $this->processName($translatedContent);
         $translatedContent = $this->processWithSyntax($translatedContent);
@@ -253,8 +252,10 @@ class IndexController extends Controller
         $meaning = str_replace("\n", "", $meaning);
         $meaning = str_replace("\r\n", "", $meaning);
 
+        $entity = '';
         if ((!$type || $type === Meaning::TYPE['PHRASE']) && mb_strlen($chinese) >= 4) {
-            Phrase::query()
+            $entity = 'Phrase';
+            $result = Phrase::query()
                 ->upsert([
                     'phrase' => $chinese,
                     'sino' => $this->getSinoVietnamese($chinese),
@@ -264,12 +265,14 @@ class IndexController extends Controller
                     'created_at' => Carbon::now()->toISOString(),
                     'updated_at' => Carbon::now()->toISOString()
                 ], ['phrase'], [
+                    'meaning' => $meaning,
                     'length' => $chineseLength,
                     'priority' => $chineseLength,
                     'updated_at' => Carbon::now()->toISOString()
                 ]);
         }
         else {
+            $entity = 'Meaning';
             $exist = Meaning::query()
                 ->where('word', $chinese)
                 ->where('type', $type)
@@ -298,6 +301,7 @@ class IndexController extends Controller
         }
 
         return response()->json([
+            'entity' => $entity,
             'message' => sprintf("%s has been successfully added", $chinese),
         ]);
     }
