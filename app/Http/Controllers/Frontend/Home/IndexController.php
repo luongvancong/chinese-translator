@@ -54,12 +54,9 @@ class IndexController extends Controller
     public function translate($text) {
         $translatedContent = $text;
 
-//        $translatedContent = strip_tags($translatedContent);
-//        $translatedContent = $this->clearDirtyCharacters($translatedContent);
         $translatedContent = $this->processPhrase($translatedContent);
         $translatedContent = $this->processName($translatedContent);
         $translatedContent = $this->processWithSyntax($translatedContent);
-
         $meaningRows = Meaning::query()
             ->where('priority', '>', 1)
             ->where('priority', '<=', mb_strlen($text))
@@ -72,7 +69,9 @@ class IndexController extends Controller
         }
 
         $translatedContent = $this->processWordByWord($translatedContent);
+
         $translatedContent = $this->clearDirtyCharacters($translatedContent);
+
 
         return $translatedContent;
     }
@@ -196,7 +195,7 @@ class IndexController extends Controller
     }
 
     public function processWithSyntax($translatedContent) {
-        $cleanContent = strip_tags($translatedContent);
+        $cleanContent = $translatedContent;
         $syntaxMeaningRows = SyntaxMeaning::query()
             ->orderBy('priority', 'DESC')
             ->get();
