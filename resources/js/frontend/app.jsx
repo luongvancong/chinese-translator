@@ -320,7 +320,8 @@ export const App = () => {
                                     <div className={'text-md text-blue-600'}>
                                         {renderSino(i, x.sino_tokens)}
                                     </div>
-                                    <Input.TextArea
+                                    <Input
+                                        spellCheck={false}
                                         value={x.predict}
                                         onChange={e => handleChangeTranslateLine(i, e.target.value)}
                                         onPressEnter={e => handleUpdatePhrase(e, x)}
