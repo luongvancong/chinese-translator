@@ -179,16 +179,6 @@ class IndexController extends Controller
             $translatedContent = str_replace($item->phrase, $item->meaning . ' ', $translatedContent);
         }
 
-        $meaningRows = Meaning::query()
-            ->where('type', 'PHRASE')
-            ->where('word', $translatedContent)
-            ->orderBy('priority', 'DESC')
-            ->get();
-
-        foreach ($meaningRows as $item) {
-            $translatedContent = str_replace($item->word, $item->meaning . ' ', $translatedContent);
-        }
-
         return trim($translatedContent);
     }
 
@@ -263,7 +253,7 @@ class IndexController extends Controller
         $meaning = str_replace("\n", "", $meaning);
         $meaning = str_replace("\r\n", "", $meaning);
 
-        if (!$type && mb_strlen($chinese) >= 4) {
+        if ((!$type || $type === Meaning::TYPE['PHRASE']) && mb_strlen($chinese) >= 4) {
             Phrase::query()
                 ->upsert([
                     'phrase' => $chinese,
@@ -286,19 +276,25 @@ class IndexController extends Controller
                 ->orderBy('priority', 'DESC')
                 ->first();
 
-            $m = new Meaning();
-            $m->priority = mb_strlen($chinese);
-            $m->word = $chinese;
-            $m->meaning = $meaning;
-            $m->type = $type;
-            $m->word_length = mb_strlen($chinese);
-            $m->sino = $this->getSinoVietnamese($chinese);
-
             if ($exist) {
-                $m->priority = $exist->priority + 1;
+                $exist->priority = mb_strlen($chinese);
+                $exist->word = $chinese;
+                $exist->meaning = $meaning;
+                $exist->type = $type;
+                $exist->word_length = mb_strlen($chinese);
+                $exist->sino = $this->getSinoVietnamese($chinese);
+                $exist->save();
             }
-
-            $m->save();
+            else {
+                $m = new Meaning();
+                $m->priority = mb_strlen($chinese);
+                $m->word = $chinese;
+                $m->meaning = $meaning;
+                $m->type = $type;
+                $m->word_length = mb_strlen($chinese);
+                $m->sino = $this->getSinoVietnamese($chinese);
+                $m->save();
+            }
         }
 
         return response()->json([
