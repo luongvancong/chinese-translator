@@ -4,17 +4,17 @@ import "toastify-js/src/toastify.css"
 import axios from 'axios';
 import {Input, Modal, Spin} from "antd";
 import lodash from 'lodash'
-import forEach from 'lodash/forEach'
-import {splitWithDelimiter} from "./util";
+import {findAllIndexes} from "./util";
+import {sortBy} from "lodash/collection";
 
 export const App = () => {
     const [loading, setLoading] = useState(false)
     const [chinese, setChinese] = useState("")
-    const [translated, setTranslated] = useState([])
     const [totalLines, setTotalLines] = useState(0)
     const [totalWords, setTotalWords] = useState(0)
     const [uniqueWords, setUniqueWords] = useState(0)
     const [translateArr, setTranslateArr] = useState([])
+    const [translatedLines, setTranslatedLines] = useState([])
     const [formAddPhrase, setFormAddPhrase] = useState({
         chinese: "",
         meaning: "",
@@ -24,6 +24,10 @@ export const App = () => {
     const [isShowModalTranslatedContent, setIsShowModalTranslatedContent] = useState(false)
     const [isShowModalHanVietContent, setIsShowModalHanVietContent] = useState(false)
     const [sinoWordSelected, setSinoWordSelected] = useState({
+        rowIndex: -1,
+        wordIndex: -1
+    })
+    const [vietNameseWordSelected, setVietnameseWordSelected] = useState({
         rowIndex: -1,
         wordIndex: -1
     })
@@ -61,96 +65,48 @@ export const App = () => {
                 setTotalWords(response.data.total_words)
                 setUniqueWords(response.data.unique_words)
 
+                const tempTranslateArr = []
 
-
-                let tempChinese = []
-                let temp = []
                 const data = response.data.data
-                for (let x of data) {
-                    const phraseTokens = x.phrase_tokens
-                    const nameTokens = x.name_tokens
-                    const wordTokens = x.word_tokens
+                for (let i = 0; i < data.length; i++) {
+                    let tempChinese = []
+                    const line = data[i]
+                    const phraseTokens = line.phrase_tokens
+                    const nameTokens = line.name_tokens
+                    const wordTokens = line.word_tokens
 
-                    let result = [<span key={lodash.uniqueId('init')}>{x.phrase}</span>]
-                    let newResult = []
-                    // forEach(phraseTokens, (v, k) => {
-                    //     newResult = [];
-                    //     result.forEach((segment) => {
-                    //         if (typeof segment === 'string') {
-                    //             const parts = segment.split(v.original)
-                    //             for (let i = 0; i < parts.length; i++) {
-                    //                 newResult.push(<span key={lodash.uniqueId('ph')}>{parts[i]}</span>)
-                    //                 // Append delimiter to between words
-                    //                 if (i < parts.length - 1) {
-                    //                     newResult.push(
-                    //                         <span key={lodash.uniqueId('ph')} data-id={v.id}>{v.meaning}</span>
-                    //                         // v.meaning
-                    //                     )
-                    //                 }
-                    //             }
-                    //         }
-                    //     })
-                    //     result = newResult
-                    // })
-                    //
-                    // forEach(nameTokens, (v, k) => {
-                    //     newResult = [];
-                    //     result.forEach((segment) => {
-                    //         if (typeof segment === 'string') {
-                    //             const parts = segment.split(v.original)
-                    //             for (let i = 0; i < parts.length; i++) {
-                    //                 newResult.push(<span key={lodash.uniqueId('name')}>{parts[i]}</span>)
-                    //                 // Append delimiter to between words
-                    //                 if (i < parts.length - 1) {
-                    //                     newResult.push(
-                    //                         <span key={lodash.uniqueId('name')} data-id={v.id}>{v.meaning}</span>
-                    //                         // v.meaning
-                    //                     )
-                    //                 }
-                    //             }
-                    //         }
-                    //     })
-                    //     result = newResult
-                    // })
+                    const tokenList = [phraseTokens, nameTokens, wordTokens]
+                    for (let tokens of tokenList) {
+                        for(let token of tokens) {
+                            const indexes = findAllIndexes(chinese, token.original)
+                            if (indexes.length) {
+                                for (let index of indexes) {
+                                    tempChinese.push({
+                                        index,
+                                        original: token.original,
+                                        meaning: token.meaning,
+                                        sino: token.sino
+                                    })
+                                }
+                            }
+                        }
+                    }
 
-                    forEach(wordTokens, (v, k) => {
-                        newResult = [];
-                        console.log('v', v)
-                        result.forEach((segment) => {
-                            const parts = segment.props.children.split(v.original)
-                            parts.forEach((part, i) => {
-                                if (part) {
-                                    newResult.push(<span key={lodash.uniqueId('w')} data-id={v.id}>{part}</span>)
-                                }
-                                // Append delimiter to between words
-                                if (i < parts.length - 1) {
-                                    newResult.push(
-                                        <span key={lodash.uniqueId('w')} data-id={v.id}>{v.meaning}</span>
-                                    )
-                                }
-                            })
+                    tempChinese = tempChinese.filter(item => {
+                        return !tempChinese.some(otherItem => {
+                            return otherItem !== item && otherItem.original.includes(item.original)
                         })
-
-                        result = newResult;
                     })
 
-                    // console.log('result', result.join(' '))
-
-                    tempChinese.push(result)
+                    tempTranslateArr[i] = sortBy(tempChinese, x => x.index)
                 }
 
-                console.log(tempChinese)
+                setTranslateArr([...tempTranslateArr])
 
-                setTranslated([...tempChinese])
-
-                setTranslateArr(() => {
-                    const state = []
-                    for (let x of tempChinese) {
-                        state.push({
-                            predict: x
-                        })
-                    }
-                    return [...state];
+                setTranslatedLines(() => {
+                    return tempTranslateArr.map((x, i) => {
+                        return x.map(xx => xx.meaning).join(' ')
+                    })
                 })
 
             })
@@ -196,11 +152,10 @@ export const App = () => {
 
     /**
      * Update nguyên một câu văn
-     * @param e
-     * @param row
+     * @param line
      */
-    const handleUpdatePhrase = (e, row) => {
-        saveAddPhrase(row.source, e.target.value, 'PHRASE')
+    const handleUpdatePhrase = (line) => {
+        saveAddPhrase(translatedLines[line], 'PHRASE')
             .then(() => {
                 Toastify({
                     text: "Update successfully",
@@ -216,11 +171,8 @@ export const App = () => {
     }
 
     const handleChangeTranslateLine = (index, value) => {
-        const foundIndex = translateArr.findIndex((x, i) => i === index)
-        if (foundIndex >= 0) {
-            translateArr[foundIndex].predict = value
-            setTranslateArr([...translateArr])
-        }
+        translatedLines[index] = value
+        setTranslatedLines([...translatedLines])
     }
 
     const handleViewTranslatedContent = () => {
@@ -232,6 +184,12 @@ export const App = () => {
     }
 
     const handleClickSinoWord = (rowIndex, wordIndex) => {
+        // Reset selected
+        setSinoWordSelected({
+            rowIndex: -1,
+            wordIndex: -1
+        })
+
         if (sinoWordSelected.rowIndex === rowIndex && sinoWordSelected.wordIndex === wordIndex) {
             setSinoWordSelected({
                 rowIndex: -1,
@@ -246,69 +204,35 @@ export const App = () => {
         }
     }
 
-    const parseSinoToken = (text) => {
-        const arr = text.split(' ')
-        const token = []
+    const renderChinese = (rowIndex, tokens) => {
+        function renderClassName (rowIndex, xsi) {
+            if (rowIndex === sinoWordSelected.rowIndex && xsi === sinoWordSelected.wordIndex) {
+                return 'bg-yellow-300 rounded'
+            }
 
-        const regex = /[0-9]+/gm;
+            if (rowIndex === vietNameseWordSelected.rowIndex && xsi === vietNameseWordSelected.wordIndex) {
+                return 'bg-yellow-300 rounded'
+            }
 
-        for (let i = 0; i < arr.length; i ++) {
-            const chars = [',', '？', '；', ';', '?', '、', '《', '》']
-            let hasSpecialChars = false
-            chars.forEach((c) => {
-                if (arr[i].indexOf(c) >= 0) {
-                    hasSpecialChars = true
-                    const arr1 = arr[i].split(c)
-                    for (let j = 0; j < arr1.length; j ++) {
-                        if (arr1[j] === '') {
-                            arr1[j] = c
-                        }
-                        token.push(arr1[j])
-                    }
-                }
+            return ''
+        }
+
+        return tokens
+            .map((xs, xsi) => {
+                return (
+                    <span
+                        key={`c-${rowIndex}-${xsi}`}
+                        onClick={() => handleClickSinoWord(rowIndex, xsi)}
+                        data-row-index={rowIndex}
+                        data-word-index={xsi}
+                        className={`cursor-pointer border-[1px] border-transparent hover:border-blue-400 inline-block rounded text-left ${renderClassName(rowIndex, xsi)}`}>
+                    {xs.original}</span>
+                )
             })
-
-            if (!hasSpecialChars) {
-                token.push(arr[i])
-            }
-        }
-
-        return token
     }
 
-    const parseChineseToken = (text) => {
-        const arr = text.split('')
-        const token = []
-        for (let i = 0; i < arr.length; i ++) {
-            if (arr[i].length > 1) {
-                const arr1 = arr[i].split('')
-                for (let j = 0; j < arr1.length; j ++) {
-                    token.push(arr1[j])
-                }
-            }
-            else {
-                token.push(arr[i])
-            }
-        }
-
-        return token
-    }
-
-    const renderChinese = (rowIndex, sinoTokens) => {
-        return sinoTokens
-            .map((xs, xsi) =>
-                <span
-                    key={`c-${rowIndex}-${xsi}`}
-                    onClick={() => handleClickSinoWord(rowIndex, xsi)}
-                    data-row-index={rowIndex}
-                    data-word-index={xsi}
-                    className={`cursor-pointer inline-block rounded text-left ${rowIndex === sinoWordSelected.rowIndex && xsi === sinoWordSelected.wordIndex ? 'bg-yellow-300 rounded' : ''}`}>
-                    {lodash.map(xs, (v, k) => k)}</span>
-            )
-    }
-
-    const renderSino = (rowIndex, sinoTokens) => {
-        return sinoTokens.map((xs, xsi) => {
+    const renderSino = (rowIndex, tokens) => {
+        return tokens.map((xs, xsi) => {
             const text = lodash.map(xs, v => v)
             return (
                 <span
@@ -317,7 +241,22 @@ export const App = () => {
                     data-word-index={xsi}
                     onClick={() => handleClickSinoWord(rowIndex, xsi)}
                     className={`cursor-pointer text-xl inline-block ${[',', '？', '?', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'].indexOf(text[0]) < 0 ? 'px-[2px]' : ''} text-left ${rowIndex === sinoWordSelected.rowIndex && xsi === sinoWordSelected.wordIndex ? 'bg-yellow-300 rounded' : ''}`}>
-                {text[0]}</span>
+                {xs.sino}</span>
+            )
+        })
+    }
+
+    const renderVietnamese = (rowIndex, tokens) => {
+        return tokens.map((xs, xsi) => {
+            const text = lodash.map(xs, v => v)
+            return (
+                <span
+                    key={`sino-${rowIndex}-${xsi}`}
+                    data-row-index={rowIndex}
+                    data-word-index={xsi}
+                    onClick={() => handleClickSinoWord(rowIndex, xsi)}
+                    className={`cursor-pointer border-[1px] border-transparent hover:border-red-400 text-xl inline-block ${[',', '？', '?', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'].indexOf(text[0]) < 0 ? 'px-[2px]' : ''} text-left ${rowIndex === sinoWordSelected.rowIndex && xsi === sinoWordSelected.wordIndex ? 'bg-yellow-300 rounded' : ''}`}>
+                {xs.meaning}</span>
             )
         })
     }
@@ -415,31 +354,31 @@ export const App = () => {
                 <div className="my-4 bg-red md:mt-[400px]">
                     <div className={'grid grid-cols-1 gap-5'}>
                         <div className={'col-span-2'}>
-
-                            {translated}
-                            {/*{translateArr.map((x, i) => (*/}
-                            {/*    <div className={'w-full mb-4'} key={i}>*/}
-                            {/*        <div>{x.predict}</div>*/}
-                            {/*        /!*<div className={'text-3xl'}>*!/*/}
-                            {/*        /!*    <span className={'rounded bg-green-200 p-2 text-xs'}>{i+1}</span>*!/*/}
-                            {/*        /!*    {renderChinese(i, x.sino_tokens)}*!/*/}
-                            {/*        /!*</div>*!/*/}
-                            {/*        /!*<div className={'text-md text-blue-600'}>*!/*/}
-                            {/*        /!*    {renderSino(i, x.sino_tokens)}*!/*/}
-                            {/*        /!*</div>*!/*/}
-                            {/*        /!*<Input*!/*/}
-                            {/*        /!*    spellCheck={false}*!/*/}
-                            {/*        /!*    value={x.predict}*!/*/}
-                            {/*        /!*    onChange={e => handleChangeTranslateLine(i, e.target.value)}*!/*/}
-                            {/*        /!*    onPressEnter={e => handleUpdatePhrase(e, x)}*!/*/}
-                            {/*        /!*    className={'border rounded border-[1px] border-grey-300 p-2 w-full bg-yellow-200'} />*!/*/}
-                            {/*    </div>*/}
-                            {/*))}*/}
+                            {translateArr.map((x, i) => (
+                                <div className={'w-full mb-4'} key={i}>
+                                    {/*{x.predict}*/}
+                                    <div className={'text-3xl flex'}>
+                                        <span className={'rounded bg-green-200 p-2 text-xs'}>{i + 1}</span>
+                                        {renderChinese(i, x)}
+                                    </div>
+                                    <div className={'text-md text-red-600 flex'}>
+                                        {renderSino(i, x)}
+                                    </div>
+                                    <div className={'text-lg text-blue-600 flex'}>
+                                        {renderVietnamese(i, x)}
+                                    </div>
+                                    <Input
+                                        spellCheck={false}
+                                        value={translatedLines[i]}
+                                        onChange={e => handleChangeTranslateLine(i, e.target.value)}
+                                        onPressEnter={e => handleUpdatePhrase(e, i)}
+                                        className={'border rounded border-[1px] border-grey-300 p-2 w-full bg-yellow-200'} />
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>
             </Spin>
-
 
 
             <Modal
