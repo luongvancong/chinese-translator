@@ -4,10 +4,16 @@ import "toastify-js/src/toastify.css"
 import axios from 'axios';
 import {Input, Modal, Spin} from "antd";
 import lodash from 'lodash'
+import forEach from 'lodash/forEach'
+import {splitWithDelimiter} from "./util";
 
 export const App = () => {
     const [loading, setLoading] = useState(false)
     const [chinese, setChinese] = useState("")
+    const [translated, setTranslated] = useState([])
+    const [totalLines, setTotalLines] = useState(0)
+    const [totalWords, setTotalWords] = useState(0)
+    const [uniqueWords, setUniqueWords] = useState(0)
     const [translateArr, setTranslateArr] = useState([])
     const [formAddPhrase, setFormAddPhrase] = useState({
         chinese: "",
@@ -50,10 +56,107 @@ export const App = () => {
         })
             .then(response => {
                 setLoading(false)
-                setTranslateArr([...response.data])
+                // setTranslateArr([...response.data])
+                setTotalLines(response.data.total_lines)
+                setTotalWords(response.data.total_words)
+                setUniqueWords(response.data.unique_words)
+
+
+
+                let tempChinese = []
+                let temp = []
+                const data = response.data.data
+                for (let x of data) {
+                    const phraseTokens = x.phrase_tokens
+                    const nameTokens = x.name_tokens
+                    const wordTokens = x.word_tokens
+
+                    let result = [<span key={lodash.uniqueId('init')}>{x.phrase}</span>]
+                    let newResult = []
+                    // forEach(phraseTokens, (v, k) => {
+                    //     newResult = [];
+                    //     result.forEach((segment) => {
+                    //         if (typeof segment === 'string') {
+                    //             const parts = segment.split(v.original)
+                    //             for (let i = 0; i < parts.length; i++) {
+                    //                 newResult.push(<span key={lodash.uniqueId('ph')}>{parts[i]}</span>)
+                    //                 // Append delimiter to between words
+                    //                 if (i < parts.length - 1) {
+                    //                     newResult.push(
+                    //                         <span key={lodash.uniqueId('ph')} data-id={v.id}>{v.meaning}</span>
+                    //                         // v.meaning
+                    //                     )
+                    //                 }
+                    //             }
+                    //         }
+                    //     })
+                    //     result = newResult
+                    // })
+                    //
+                    // forEach(nameTokens, (v, k) => {
+                    //     newResult = [];
+                    //     result.forEach((segment) => {
+                    //         if (typeof segment === 'string') {
+                    //             const parts = segment.split(v.original)
+                    //             for (let i = 0; i < parts.length; i++) {
+                    //                 newResult.push(<span key={lodash.uniqueId('name')}>{parts[i]}</span>)
+                    //                 // Append delimiter to between words
+                    //                 if (i < parts.length - 1) {
+                    //                     newResult.push(
+                    //                         <span key={lodash.uniqueId('name')} data-id={v.id}>{v.meaning}</span>
+                    //                         // v.meaning
+                    //                     )
+                    //                 }
+                    //             }
+                    //         }
+                    //     })
+                    //     result = newResult
+                    // })
+
+                    forEach(wordTokens, (v, k) => {
+                        newResult = [];
+                        console.log('v', v)
+                        result.forEach((segment) => {
+                            const parts = segment.props.children.split(v.original)
+                            parts.forEach((part, i) => {
+                                if (part) {
+                                    newResult.push(<span key={lodash.uniqueId('w')} data-id={v.id}>{part}</span>)
+                                }
+                                // Append delimiter to between words
+                                if (i < parts.length - 1) {
+                                    newResult.push(
+                                        <span key={lodash.uniqueId('w')} data-id={v.id}>{v.meaning}</span>
+                                    )
+                                }
+                            })
+                        })
+
+                        result = newResult;
+                    })
+
+                    // console.log('result', result.join(' '))
+
+                    tempChinese.push(result)
+                }
+
+                console.log(tempChinese)
+
+                setTranslated([...tempChinese])
+
+                setTranslateArr(() => {
+                    const state = []
+                    for (let x of tempChinese) {
+                        state.push({
+                            predict: x
+                        })
+                    }
+                    return [...state];
+                })
+
             })
             .catch((error) => {
                 setLoading(false)
+                console.log(error)
                 Toastify({
                     text: error.response.data.message || error.message || "Error",
                     backgroundColor: "red"
@@ -254,8 +357,9 @@ export const App = () => {
                                     )}
                                 </div>
                                 <div>
-                                    <span className={'text-sm'}>{chinese.length} chữ | </span>
-                                    <span className={'text-sm'}>{translateArr.length} câu</span>
+                                    <span className={'text-sm'}>{totalWords} chữ | </span>
+                                    <span className={'text-sm'}>{uniqueWords} từ | </span>
+                                    <span className={'text-sm'}>{totalLines} câu</span>
                                 </div>
                             </div>
 
@@ -311,23 +415,26 @@ export const App = () => {
                 <div className="my-4 bg-red md:mt-[400px]">
                     <div className={'grid grid-cols-1 gap-5'}>
                         <div className={'col-span-2'}>
-                            {translateArr.map((x, i) => (
-                                <div className={'w-full mb-4'} key={i}>
-                                    <div className={'text-3xl'}>
-                                        <span className={'rounded bg-green-200 p-2 text-xs'}>{i+1}</span>
-                                        {renderChinese(i, x.sino_tokens)}
-                                    </div>
-                                    <div className={'text-md text-blue-600'}>
-                                        {renderSino(i, x.sino_tokens)}
-                                    </div>
-                                    <Input
-                                        spellCheck={false}
-                                        value={x.predict}
-                                        onChange={e => handleChangeTranslateLine(i, e.target.value)}
-                                        onPressEnter={e => handleUpdatePhrase(e, x)}
-                                        className={'border rounded border-[1px] border-grey-300 p-2 w-full bg-yellow-200'} />
-                                </div>
-                            ))}
+
+                            {translated}
+                            {/*{translateArr.map((x, i) => (*/}
+                            {/*    <div className={'w-full mb-4'} key={i}>*/}
+                            {/*        <div>{x.predict}</div>*/}
+                            {/*        /!*<div className={'text-3xl'}>*!/*/}
+                            {/*        /!*    <span className={'rounded bg-green-200 p-2 text-xs'}>{i+1}</span>*!/*/}
+                            {/*        /!*    {renderChinese(i, x.sino_tokens)}*!/*/}
+                            {/*        /!*</div>*!/*/}
+                            {/*        /!*<div className={'text-md text-blue-600'}>*!/*/}
+                            {/*        /!*    {renderSino(i, x.sino_tokens)}*!/*/}
+                            {/*        /!*</div>*!/*/}
+                            {/*        /!*<Input*!/*/}
+                            {/*        /!*    spellCheck={false}*!/*/}
+                            {/*        /!*    value={x.predict}*!/*/}
+                            {/*        /!*    onChange={e => handleChangeTranslateLine(i, e.target.value)}*!/*/}
+                            {/*        /!*    onPressEnter={e => handleUpdatePhrase(e, x)}*!/*/}
+                            {/*        /!*    className={'border rounded border-[1px] border-grey-300 p-2 w-full bg-yellow-200'} />*!/*/}
+                            {/*    </div>*/}
+                            {/*))}*/}
                         </div>
                     </div>
                 </div>
