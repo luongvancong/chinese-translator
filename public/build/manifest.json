@@ -1,6 +1,6 @@
 {
   "resources/css/frontend/app.css": {
-    "file": "assets/app-d7c1038c.css",
+    "file": "assets/app-464d22f0.css",
     "isEntry": true,
     "src": "resources/css/frontend/app.css"
   },
@@ -12,7 +12,7 @@
     "css": [
       "assets/index-a461d729.css"
     ],
-    "file": "assets/index-a0cada08.js",
+    "file": "assets/index-a67a55f2.js",
     "isEntry": true,
     "src": "resources/js/frontend/index.jsx"
   }

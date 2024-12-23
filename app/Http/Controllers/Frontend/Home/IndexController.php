@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 
 class IndexController extends Controller
@@ -23,7 +24,12 @@ class IndexController extends Controller
     public function postTranslate(Request $request) {
         $chinese = $request->get('chinese');
 
-        $result = collect();
+        $result = [
+            'total_lines' => 0,
+            'total_words' => 0,
+            'unique_words'=> 0,
+            'data' => []
+        ];
         if ($chinese) {
 
             if (mb_strlen($chinese) >= 10000) {
@@ -37,16 +43,15 @@ class IndexController extends Controller
             $lineByLineContent = $this->breakTextToArray($translatedContent);
 
             foreach ($lineByLineContent as $line) {
-                $content = ucfirst($this->translate($line));
-                $sino = ucfirst($this->getSinoVietnamese($line));
-                $result->push([
-                    'sino' => $sino,
-                    'sino_tokens' => $this->getSinoTokens($line),
-                    'source' => $line,
-                    'predict' => $content
-                ]);
+                $content = $this->translate2($line);
+                $result['data'][] = $content;
             }
         }
+
+        $result['total_lines'] = count($result['data']);
+        preg_match_all('/\p{Han}/u', $chinese, $matches);
+        $result['total_words'] = isset($matches[0]) ? count($matches[0]) : 0;
+        $result['unique_words'] = count(array_unique($matches[0]));
 
         return $result;
     }
@@ -74,6 +79,33 @@ class IndexController extends Controller
 
 
         return $translatedContent;
+    }
+
+    public function translate2($text) {
+        $translatedContent = $text;
+        $phraseTokens = $this->processPhrase($translatedContent);
+        $nameTokens = $this->processName($translatedContent);
+        $wordTokens = $this->processWordByWord($translatedContent);
+
+        foreach ($phraseTokens as $chinese => $x) {
+            $translatedContent = str_replace($chinese, $x['meaning'] . ' ', $translatedContent);
+        }
+
+        foreach ($nameTokens as $chinese => $x) {
+            $translatedContent = str_replace($chinese, $x['meaning'] . ' ', $translatedContent);
+        }
+
+        foreach ($wordTokens as $chinese => $x) {
+            $translatedContent = str_replace($chinese, $x['meaning'] . ' ', $translatedContent);
+        }
+
+        return [
+            'phrase' => $text,
+            'translated' => $this->clearDirtyCharacters($translatedContent),
+            'phrase_tokens' => $this->processPhrase($text),
+            'name_tokens' => $this->processName($text),
+            'word_tokens' => $this->processWordByWord($text),
+        ];
     }
 
     public function clearDirtyCharacters($translatedContent): string {
@@ -118,10 +150,10 @@ class IndexController extends Controller
         return $tokens;
     }
 
-    public function processWordByWord($translatedContent): string
+    public function processWordByWord($chineseContent): array
     {
-        $_translatedContent = $translatedContent;
-        preg_match_all('/\p{Han}/u', $_translatedContent, $matches);
+        $_chineseContent = $chineseContent;
+        preg_match_all('/\p{Han}/u', $_chineseContent, $matches);
         $arrWord = array_unique($matches[0]);
 
         $meaning = Meaning::query()
@@ -129,24 +161,29 @@ class IndexController extends Controller
             ->orderBy('priority', 'DESC')
             ->get();
 
+        $tokens = [];
         foreach ($meaning as $item) {
-            $_translatedContent = str_replace($item->word, $item->meaning . ' ', $_translatedContent);
-            $_translatedContent = preg_replace('!\s+!', ' ', $_translatedContent);
+            $tokens[$item->word] = [
+                'id' => Str::random(6),
+                'original' => $item->word,
+                'sino' => $item->sino,
+                'meaning' =>trim($item->meaning)
+            ];
         }
 
-        return trim($_translatedContent);
+        return array_values($tokens);
     }
 
-    public function processPhrase($translatedContent) {
+    public function processPhrase($chineseContent) {
         ini_set('memory_limit', '-1');
 
         $maxLength = Phrase::query()->max('priority');
-        $strLen = mb_strlen($translatedContent);
+        $strLen = mb_strlen($chineseContent);
         if ($strLen > $maxLength)  $strLen = $maxLength;
 
         $arrPhrase = [];
         for ($i = $strLen; $i >= 3; $i--) {
-            $temp = $this->text2phrase($translatedContent, $i);
+            $temp = $this->text2phrase($chineseContent, $i);
             foreach ($temp as $x) {
                 $arrPhrase[] = $x;
             }
@@ -173,25 +210,41 @@ class IndexController extends Controller
             ->orderBy('priority', 'DESC')
             ->get();
 
+        $tokens = [];
         foreach ($meaningRows as $item) {
-            $translatedContent = str_replace($item->phrase, $item->meaning . ' ', $translatedContent);
+            if (mb_strpos($chineseContent, $item->phrase) !== false) {
+                $tokens[$item->phrase] = [
+                    'id' => Str::random(6),
+                    'original' => $item->phrase,
+                    'sino' => $item->sino ? $item->sino : $this->getSinoVietnamese($item->phrase),
+                    'meaning' => $item->meaning
+                ];
+            }
         }
 
-        return trim($translatedContent);
+        return array_values($tokens);
     }
 
-    public function processName($translatedContent) {
+    public function processName($chineseContent) {
         $meaningRows = Meaning::query()
             ->where('type', 'NAME')
             ->orderBy('priority', 'DESC')
             ->orderBy('word_length', 'DESC')
             ->get();
 
+        $tokens = [];
         foreach ($meaningRows as $item) {
-            $translatedContent = str_replace($item->word, $item->meaning . ' ', $translatedContent);
+            if (mb_strpos($chineseContent, $item->word) !== false) {
+                $tokens[$item->word] = [
+                    'id' => Str::random(6),
+                    'original' => $item->word,
+                    'sino' => $item->sino ? $item->sino : $this->getSinoVietnamese($item->word),
+                    'meaning' => trim($item->meaning)
+                ];
+            }
         }
 
-        return trim($translatedContent);
+        return array_values($tokens);
     }
 
     public function processWithSyntax($translatedContent) {
@@ -251,10 +304,9 @@ class IndexController extends Controller
         $meaning = str_replace("\n", "", $meaning);
         $meaning = str_replace("\r\n", "", $meaning);
 
-        $entity = '';
         if ((!$type || $type === Meaning::TYPE['PHRASE']) && mb_strlen($chinese) >= 4) {
             $entity = 'Phrase';
-            $result = Phrase::query()
+            Phrase::query()
                 ->upsert([
                     'phrase' => $chinese,
                     'sino' => $this->getSinoVietnamese($chinese),
@@ -272,6 +324,7 @@ class IndexController extends Controller
         }
         else {
             $entity = 'Meaning';
+            /* @var Meaning|null $exist */
             $exist = Meaning::query()
                 ->where('word', $chinese)
                 ->where('type', $type)
