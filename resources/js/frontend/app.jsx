@@ -71,6 +71,7 @@ export const App = () => {
                 for (let i = 0; i < data.length; i++) {
                     let tempChinese = []
                     const line = data[i]
+                    const phrase = line.phrase
                     const phraseTokens = line.phrase_tokens
                     const nameTokens = line.name_tokens
                     const wordTokens = line.word_tokens
@@ -78,7 +79,7 @@ export const App = () => {
                     const tokenList = [phraseTokens, nameTokens, wordTokens]
                     for (let tokens of tokenList) {
                         for(let token of tokens) {
-                            const indexes = findAllIndexes(chinese, token.original)
+                            const indexes = findAllIndexes(phrase, token.original)
                             if (indexes.length) {
                                 for (let index of indexes) {
                                     tempChinese.push({
@@ -89,23 +90,29 @@ export const App = () => {
                                     })
                                 }
                             }
+
                         }
                     }
 
                     tempChinese = tempChinese.filter(item => {
                         return !tempChinese.some(otherItem => {
-                            return otherItem !== item && otherItem.original.includes(item.original)
+                            return otherItem !== item && otherItem.original.length > item.original.length && otherItem.original.includes(item.original)
                         })
                     })
 
                     tempTranslateArr[i] = sortBy(tempChinese, x => x.index)
+                    // console.log(tempTranslateArr)
                 }
 
                 setTranslateArr([...tempTranslateArr])
 
                 setTranslatedLines(() => {
                     return tempTranslateArr.map((x, i) => {
-                        return x.map(xx => xx.meaning).join(' ')
+                        return {
+                            original: x.map(y => y.original).join(''),
+                            meaning: x.map(y => y.meaning).join(' '),
+                            sino: x.map(y => y.sino).join(' ')
+                        }
                     })
                 })
 
@@ -155,7 +162,7 @@ export const App = () => {
      * @param line
      */
     const handleUpdatePhrase = (line) => {
-        saveAddPhrase(translatedLines[line], 'PHRASE')
+        saveAddPhrase(translatedLines[line].original, translatedLines[line].meaning, 'PHRASE')
             .then(() => {
                 Toastify({
                     text: "Update successfully",
@@ -171,7 +178,7 @@ export const App = () => {
     }
 
     const handleChangeTranslateLine = (index, value) => {
-        translatedLines[index] = value
+        translatedLines[index].meaning = value
         setTranslatedLines([...translatedLines])
     }
 
@@ -216,6 +223,8 @@ export const App = () => {
 
             return ''
         }
+
+        // console.log(tokens)
 
         return tokens
             .map((xs, xsi) => {
@@ -357,21 +366,21 @@ export const App = () => {
                             {translateArr.map((x, i) => (
                                 <div className={'w-full mb-4'} key={i}>
                                     {/*{x.predict}*/}
-                                    <div className={'text-3xl flex'}>
+                                    <div className={'text-3xl flex flex-wrap'}>
                                         <span className={'rounded bg-green-200 p-2 text-xs'}>{i + 1}</span>
                                         {renderChinese(i, x)}
                                     </div>
-                                    <div className={'text-md text-red-600 flex'}>
+                                    <div className={'text-md text-red-600 flex flex-wrap'}>
                                         {renderSino(i, x)}
                                     </div>
-                                    <div className={'text-lg text-blue-600 flex'}>
+                                    <div className={'text-lg text-blue-600 flex flex-wrap'}>
                                         {renderVietnamese(i, x)}
                                     </div>
                                     <Input
                                         spellCheck={false}
-                                        value={translatedLines[i]}
+                                        value={translatedLines[i].meaning}
                                         onChange={e => handleChangeTranslateLine(i, e.target.value)}
-                                        onPressEnter={e => handleUpdatePhrase(e, i)}
+                                        onPressEnter={e => handleUpdatePhrase(i)}
                                         className={'border rounded border-[1px] border-grey-300 p-2 w-full bg-yellow-200'} />
                                 </div>
                             ))}
@@ -388,8 +397,8 @@ export const App = () => {
                 footer={null}
                 onCancel={() => setIsShowModalTranslatedContent(false)}
             >
-                {translateArr.map((x, i) => (
-                    <p key={i} className={'mb-2'}>{x.predict}.</p>
+                {translatedLines.map((x, i) => (
+                    <p key={i} className={'mb-2'}>{x.meaning}.</p>
                 ))}
             </Modal>
 
@@ -400,7 +409,7 @@ export const App = () => {
                 footer={null}
                 onCancel={() => setIsShowModalHanVietContent(false)}
             >
-                {translateArr.map((x, i) => (
+                {translatedLines.map((x, i) => (
                     <p key={i} className={'mb-2'}>{x.sino}.</p>
                 ))}
             </Modal>
