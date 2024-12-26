@@ -277,6 +277,16 @@ class IndexController extends Controller
             }
         }
 
+        // Remove items that are substrings of other items
+        $tokens = Arr::where($tokens, function($value, $key) use ($tokens) {
+            foreach ($tokens as $k => $v) {
+                if ($key !== $k && mb_strpos($k, $key) !== false) {
+                    return false;
+                }
+            }
+            return true;
+        });
+
         return array_values($tokens);
     }
 
