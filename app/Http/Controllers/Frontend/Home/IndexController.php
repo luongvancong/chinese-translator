@@ -83,29 +83,82 @@ class IndexController extends Controller
 
     public function translate2($text) {
         $translatedContent = $text;
+        $temp = $text;
         $phraseTokens = $this->processPhrase($translatedContent);
-        $nameTokens = $this->processName($translatedContent);
-        $wordTokens = $this->processWordByWord($translatedContent);
+        $nameTokens = [];
+        $wordTokens = [];
 
-        foreach ($phraseTokens as $chinese => $x) {
-            $translatedContent = str_replace($chinese, $x['meaning'] . ' ', $translatedContent);
+        foreach ($phraseTokens as $x) {
+            $translatedContent = str_replace($x['original'], $x['meaning'] . ' ', $translatedContent);
+            $c = "";
+            for ($i = 0; $i < mb_strlen($x['original']); $i++) {
+                $c .= '。';
+            }
+            $temp = str_replace($x['original'], $c, $temp);
         }
 
-        foreach ($nameTokens as $chinese => $x) {
-            $translatedContent = str_replace($chinese, $x['meaning'] . ' ', $translatedContent);
+        if (preg_match('/\p{Han}/u', $temp)) {
+            $nameTokens = $this->processName($temp);
+            foreach ($nameTokens as $n) {
+                $translatedContent = str_replace($n['original'], $n['meaning'] . ' ', $translatedContent);
+                $c = "";
+                for ($i = 0; $i < mb_strlen($n['original']); $i++) {
+                    $c .= '。';
+                }
+                $temp = str_replace($n['original'], $c, $temp);
+            }
         }
 
-        foreach ($wordTokens as $chinese => $x) {
-            $translatedContent = str_replace($chinese, $x['meaning'] . ' ', $translatedContent);
+        if (preg_match('/\p{Han}/u', $temp)) {
+            $wordTokens = $this->processWordByWord($temp);
+            foreach ($wordTokens as $w) {
+                $translatedContent = str_replace($w['original'], $w['meaning'] . ' ', $translatedContent);
+            }
+        }
+
+        $tempDelimiterIndexes = $this->getDelimiterIndexes($text);
+        $delimiterIndexes = [];
+        foreach ($tempDelimiterIndexes as $delimiter => $indexes) {
+            $delimiterIndexes[] = [
+                'original' => $delimiter,
+                'meaning' => $this->clearDirtyCharacters($delimiter),
+                'sino' => $this->clearDirtyCharacters($delimiter),
+                'indexes' => $indexes
+            ];
         }
 
         return [
             'phrase' => $text,
             'translated' => $this->clearDirtyCharacters($translatedContent),
-            'phrase_tokens' => $this->processPhrase($text),
-            'name_tokens' => $this->processName($text),
-            'word_tokens' => $this->processWordByWord($text),
+            'phrase_tokens' => $phraseTokens,
+            'name_tokens' => array_values($nameTokens),
+            'word_tokens' => array_values($wordTokens),
+            'delimiter_indexes' => $delimiterIndexes,
         ];
+    }
+
+    public function getDelimiterIndexes($text) {
+        $delimiterIndexes = [];
+        $delimiter = ['，', '。', '；', '、', ','];
+        foreach ($delimiter as $d) {
+            $indexes = $this->getAllIndexes($text, $d);
+            if (count($indexes)) {
+                $delimiterIndexes[$d] = $indexes;
+            }
+        }
+        return $delimiterIndexes;
+    }
+
+    public function getAllIndexes($string, $substring) {
+        $indexes = [];
+        $offset = 0;
+
+        while (($pos = strpos($string, $substring, $offset)) !== false) {
+            $indexes[] = $pos;
+            $offset = $pos + strlen($substring);
+        }
+
+        return $indexes;
     }
 
     public function clearDirtyCharacters($translatedContent): string {
@@ -167,7 +220,8 @@ class IndexController extends Controller
                 'id' => Str::random(6),
                 'original' => $item->word,
                 'sino' => $item->sino,
-                'meaning' =>trim($item->meaning)
+                'meaning' => trim($item->meaning),
+                'indexes' => $this->getAllIndexes($chineseContent, $item->word)
             ];
         }
 
@@ -217,7 +271,8 @@ class IndexController extends Controller
                     'id' => Str::random(6),
                     'original' => $item->phrase,
                     'sino' => $item->sino ? $item->sino : $this->getSinoVietnamese($item->phrase),
-                    'meaning' => $item->meaning
+                    'meaning' => $item->meaning,
+                    'indexes' => $this->getAllIndexes($chineseContent, $item->phrase)
                 ];
             }
         }
@@ -239,7 +294,8 @@ class IndexController extends Controller
                     'id' => Str::random(6),
                     'original' => $item->word,
                     'sino' => $item->sino ? $item->sino : $this->getSinoVietnamese($item->word),
-                    'meaning' => trim($item->meaning)
+                    'meaning' => trim($item->meaning),
+                    'indexes' => $this->getAllIndexes($chineseContent, $item->word)
                 ];
             }
         }

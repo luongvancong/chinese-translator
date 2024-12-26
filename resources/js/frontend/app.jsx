@@ -4,7 +4,6 @@ import "toastify-js/src/toastify.css"
 import axios from 'axios';
 import {Input, Modal, Spin} from "antd";
 import lodash from 'lodash'
-import {findAllIndexes} from "./util";
 import {sortBy} from "lodash/collection";
 
 export const App = () => {
@@ -75,11 +74,12 @@ export const App = () => {
                     const phraseTokens = line.phrase_tokens
                     const nameTokens = line.name_tokens
                     const wordTokens = line.word_tokens
+                    const delimiterIndexes = line.delimiter_indexes
 
                     const tokenList = [phraseTokens, nameTokens, wordTokens]
                     for (let tokens of tokenList) {
                         for(let token of tokens) {
-                            const indexes = findAllIndexes(phrase, token.original)
+                            const indexes = token.indexes
                             if (indexes.length) {
                                 for (let index of indexes) {
                                     tempChinese.push({
@@ -94,14 +94,19 @@ export const App = () => {
                         }
                     }
 
-                    tempChinese = tempChinese.filter(item => {
-                        return !tempChinese.some(otherItem => {
-                            return otherItem !== item && otherItem.original.length > item.original.length && otherItem.original.includes(item.original)
-                        })
-                    })
+                    for (let x of delimiterIndexes) {
+                        for (let index of x.indexes) {
+                            tempChinese.push({
+                                index,
+                                original: x.original,
+                                meaning: x.meaning,
+                                sino: x.sino
+                            })
+                        }
+                    }
 
                     tempTranslateArr[i] = sortBy(tempChinese, x => x.index)
-                    // console.log(tempTranslateArr)
+                    console.log(tempTranslateArr)
                 }
 
                 setTranslateArr([...tempTranslateArr])
