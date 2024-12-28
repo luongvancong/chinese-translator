@@ -133,9 +133,13 @@ export const App = () => {
     }
 
     const handleChangedFormAddPhrase = (key, value) => {
+        let newValue = value
+        if (key === 'chinese') {
+            newValue = value ? value.trim().replaceAll(/\s/g, "") : ""
+        }
         setFormAddPhrase({
             ...formAddPhrase,
-            [key]: value
+            [key]: newValue
         })
     }
 
@@ -326,7 +330,7 @@ export const App = () => {
                                         id="update-chinese"
                                         className="border rounded px-2 py-2 w-full"
                                         placeholder="Chinese"
-                                        value={formAddPhrase.chinese}
+                                        value={formAddPhrase.chinese.replaceAll(/\s/g, "")}
                                         onChange={e => handleChangedFormAddPhrase('chinese', e.target.value)}
                                     />
                                 </div>
@@ -385,7 +389,7 @@ export const App = () => {
                                         spellCheck={false}
                                         value={translatedLines[i].meaning}
                                         onChange={e => handleChangeTranslateLine(i, e.target.value)}
-                                        onPressEnter={e => handleUpdatePhrase(i)}
+                                        onPressEnter={() => handleUpdatePhrase(i)}
                                         className={'border rounded border-[1px] border-grey-300 p-2 w-full bg-yellow-200'} />
                                 </div>
                             ))}
