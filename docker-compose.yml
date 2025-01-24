@@ -1,40 +1,40 @@
 version: '3'
 services:
 
-    nginx:
-        image: nginx:latest
-        ports:
-            - "1280:80"
-        volumes:
-            - ./nginx-fpm.conf:/etc/nginx/conf.d/default.conf
-            - ./:/var/www/html
+  nginx:
+    image: nginx:latest
+    ports:
+      - "1280:80"
+    volumes:
+      - ./nginx-fpm.conf:/etc/nginx/conf.d/default.conf
+      - ./:/var/www/html
 
-    php:
-        restart: always
-        build:
-          context: .
-          dockerfile: Dockerfile
-        volumes:
-            - ./:/var/www/html
-            - ./uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
+  php:
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/var/www/html
+      - ./uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
 
-    db:
-        image: postgres:15.1-alpine
-        restart: always
-        ports:
-            - "1281:5432"
-        volumes:
-            - postgres:/var/lib/postgresql/data
-        environment:
-            POSTGRES_USER: root
-            POSTGRES_PASSWORD: root
-            POSTGRES_DB: chinese-translator
+  db:
+    image: postgres:15.1-alpine
+    restart: always
+    ports:
+      - "1281:5432"
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: chinese-translator
 
-    adminer:
-        image: adminer
-        restart: always
-        ports:
-            - "8080:8080"
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "1282:8080"
 
 volumes:
-    postgres:
+  postgres:
