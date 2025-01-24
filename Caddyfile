@@ -1,3 +1,7 @@
-translator.xemboi.today
+translator.xemboi.today {
+   reverse_proxy 127.0.0.1:1280
+}
 
-reverse_proxy :1280
+adm.translator.xemboi.today {
+  reverse_proxy 127.0.0.1:8080
+}
