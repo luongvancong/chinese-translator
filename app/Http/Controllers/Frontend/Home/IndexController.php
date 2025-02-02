@@ -236,7 +236,7 @@ class IndexController extends Controller
         if ($strLen > $maxLength)  $strLen = $maxLength;
 
         $arrPhrase = [];
-        for ($i = $strLen; $i >= 3; $i--) {
+        for ($i = $strLen; $i >= 2; $i--) {
             $temp = $this->text2phrase($chineseContent, $i);
             foreach ($temp as $x) {
                 $arrPhrase[] = $x;
@@ -276,6 +276,27 @@ class IndexController extends Controller
                 ];
             }
         }
+
+        $meaningRows = Meaning::query()
+            ->whereIn('word', $arrPhrase)
+            ->where('priority', '>=', $minLengthPhrase)
+            ->where('priority', '<=', $maxLengthPhrase)
+            ->orderBy('priority', 'DESC')
+            ->get();
+
+        foreach ($meaningRows as $item) {
+            if (mb_strpos($chineseContent, $item->word) !== false) {
+                $tokens[$item->word] = [
+                    'id' => Str::random(6),
+                    'original' => $item->word,
+                    'sino' => $item->sino ? $item->sino : $this->getSinoVietnamese($item->word),
+                    'meaning' => $item->meaning,
+                    'indexes' => $this->getAllIndexes($chineseContent, $item->word)
+                ];
+            }
+        }
+
+        // Start new year, hello chinese
 
         // Remove items that are substrings of other items
         $tokens = Arr::where($tokens, function($value, $key) use ($tokens) {
